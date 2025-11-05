@@ -19,6 +19,7 @@ https://github.com/user-attachments/assets/adb5748d-e84e-448a-8dfb-283e7845232b
 - 动态端口转发：自动查找可用本地端口（起始 `6666`），避免与常用端口冲突。
 - 可配置视频码率：通过命令行参数 `--video_bit_rate` 设置码率。
 - 内置 ADB：已包含 `adb` 二进制（Windows/macOS/Linux），开箱即用。
+ - AI 聊天与自动操作：前端聊天面板发送自然语言指令，后端基于 Mobile-Agent-v3 驱动当前镜像设备执行操作，支持流式日志与最终回答。
 
 ## 架构说明
 
@@ -54,6 +55,13 @@ https://github.com/user-attachments/assets/adb5748d-e84e-448a-8dfb-283e7845232b
   - 在项目根目录执行：
     - `pip install -r requirements.txt`
 
+- 配置环境变量（可选，用于 AI 聊天与自动操作）
+  - 在项目根目录创建 `.env` 文件，填入以下变量（示例占位即可，按你的服务提供者填写）：
+    - `AGENT_API_KEY=你的密钥`
+    - `AGENT_BASE_URL=你的接口地址`
+    - `AGENT_MODEL=你的模型标识`
+  - 注意：未设置上述变量时，AI 聊天功能不可用，页面会提示“后端未配置 AI 模型服务…”。
+
 - 运行后端
   - 默认码率运行：
     - `python app.py`
@@ -83,6 +91,23 @@ https://github.com/user-attachments/assets/adb5748d-e84e-448a-8dfb-283e7845232b
   - 页面展示已连接设备的状态（`device`/镜像中/未镜像）。
   - 启动新的镜像前会自动停止其他设备的镜像，避免资源竞争。
 
+### AI 聊天与自动操作
+
+- 前提条件
+  - 至少有一个设备在“开始镜像”状态。
+  - `.env` 中已正确配置 `AGENT_API_KEY`、`AGENT_BASE_URL`、`AGENT_MODEL`。
+
+- 使用方式（页面端）
+  - 在右侧聊天面板输入指令，例如“打开设置”。
+  - 点击“发送”，后端会启动 Mobile-Agent-v3 针对当前镜像设备执行步骤；过程日志以流式文本显示在气泡中，结束后返回最终回答。
+  - 如需中止正在进行的任务，点击“停止”。
+
+- 日志与图片
+  - 后端将操作过程日志保存在 `./logs/<时间戳>_<指令>/step_x/` 下，包含 `manager.json`、`operator.json`、`reflector.json` 等。
+  - 部分 JSON 内含图片（base64 编码）。你可在后处理脚本中解析并保存为文件，或扩展前端将相关截图以图片卡片形式展示。
+
+> 说明：当前前端聊天泡泡内默认显示流式文本与最终回答；图片展示可按需扩展（不影响日志文件的生成与保存）。
+
 ## 常见问题与提示
 
 - 首次镜像会向设备推送 `scrcpy-server.jar` 到路径 `/data/local/tmp/scrcpy-server.jar`。
@@ -91,6 +116,10 @@ https://github.com/user-attachments/assets/adb5748d-e84e-448a-8dfb-283e7845232b
 - 音频：已建立音频 socket，当前前端未播放音频（如需可扩展为音频解码/播放）。
 - TCP/IP 模式：未开启时可使用标准命令在 USB 下启用（示例）：
   - `adb tcpip 5555` 后拔线，`adb connect <设备IP>:5555`。
+
+- AI 聊天无法使用并提示“后端未配置 AI 模型服务（环境变量 AGENT_API_KEY/AGENT_BASE_URL/AGENT_MODEL）”
+  - 请在仓库根目录创建 `.env`，补齐上述三项变量；重启后端服务后再试。
+  - 如果你在多设备场景下使用 AI 聊天，请确保页面上已有设备处于“开始镜像”状态，否则会提示“未找到正在镜像的设备…”。
 
 ## 与上游项目的差异（本仓库改进点）
 
@@ -108,6 +137,8 @@ https://github.com/user-attachments/assets/adb5748d-e84e-448a-8dfb-283e7845232b
 - `templates/index.html`：页面模板与核心前端逻辑。
 - `static/js/`：前端脚本（`jmuxer.min.js`、视频解析、输入控制等）。
 - `adb/`：跨平台 ADB 二进制（`windows/adb.exe`、`linux/adb`、`darwin/adb`）。
+- `mobile_v3/`：Mobile-Agent-v3 相关代码与工具（`run_mobileagentv3.py`、`utils/`）。
+- `logs/`：AI 自动化运行日志输出目录（按时间戳与指令分组）。
 
 ## 许可证
 

@@ -1,2 +1,10 @@
 flask
 flask-socketio
+python-dotenv
+Pillow
+numpy
+openai
+qwen-vl-utils
+pydantic
+torch
+torchvision

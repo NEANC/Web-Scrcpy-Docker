@@ -26,6 +26,10 @@
             overflow-y: auto;
             transition: width 0.25s ease;
         }
+        /* 布局顺序：左侧边栏 -> 主内容 -> 右侧 AI 边栏 */
+        .sidebar { order: 1; }
+        .main-content { order: 2; }
+        .rightbar { order: 3; }
 
         .sidebar-header {
             padding: 20px;
@@ -45,6 +49,104 @@
         .sidebar-content {
             flex: 1;
             padding: 20px;
+        }
+
+        /* 右侧 AI 边栏样式 */
+        .rightbar {
+            width: 360px;
+            background: #ffffff;
+            border-left: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.25s ease, transform 0.25s ease;
+        }
+        .rightbar-header {
+            padding: 12px 16px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .rightbar-content {
+            padding: 12px 16px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        body.rightbar-collapsed .rightbar {
+            width: 0;
+            border: none;
+            padding: 0;
+            overflow: hidden;
+        }
+        /* 移动端作为抽屉式覆盖 */
+        @media (max-width: 768px) {
+            .rightbar {
+                position: fixed;
+                top: 0;
+                right: 0;
+                height: 100vh;
+                max-width: 420px;
+                width: 86vw;
+                transform: translateX(100%);
+                z-index: 1000;
+                box-shadow: -2px 0 12px rgba(0, 0, 0, 0.2);
+            }
+            body:not(.rightbar-collapsed) .rightbar {
+                transform: translateX(0);
+            }
+        }
+        .ai-chat { position: relative; }
+        .ai-chat.hidden { display: none; }
+
+        .ai-chat-section {
+            margin-top: 20px;
+        }
+
+        .chat-container {
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            background: #fafafa;
+            height: 260px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .chat-message {
+            max-width: 85%;
+            padding: 8px 10px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            word-break: break-word;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+
+        .chat-message.user {
+            margin-left: auto;
+            background: #0d6efd;
+            color: #fff;
+            border-bottom-right-radius: 2px;
+        }
+
+        .chat-message.ai {
+            margin-right: auto;
+            background: #e9ecef;
+            color: #222;
+            border-bottom-left-radius: 2px;
+        }
+
+        .chat-input-row {
+            margin-top: 8px;
         }
 
         .main-content {
@@ -95,9 +197,11 @@
         body.orientation-landscape .sidebar {
             width: 350px;
         }
+
         body.orientation-portrait .sidebar {
             width: 350px;
         }
+
         /* 视频适配增强 */
         video {
             object-fit: contain;
@@ -111,22 +215,27 @@
             padding: 12px;
             border-bottom: 1px solid #eee;
         }
+
         .device-info {
             display: flex;
             flex-direction: column;
         }
+
         .device-name {
             font-weight: 600;
             color: #222;
         }
+
         .device-meta {
             color: #666;
             font-size: 0.9em;
         }
+
         .device-actions {
             display: flex;
             gap: 10px;
         }
+
         .device-actions button {
             font-size: 13px;
         }
@@ -135,7 +244,7 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-        }   
+        }
 
         .status-text {
             margin: 15px 0 0 0;
@@ -179,6 +288,7 @@
             border: none;
             overflow: hidden;
         }
+
         body.sidebar-collapsed .sidebar-header,
         body.sidebar-collapsed .sidebar-content {
             display: none;
@@ -197,6 +307,7 @@
             cursor: pointer;
             font-size: 13px;
         }
+
         .sidebar-toggle-btn:hover {
             background: #f0f0f0;
         }
@@ -216,27 +327,35 @@
             background: rgba(255, 255, 255, 0.9);
             color: #333;
             border: 1px solid #ddd;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
             cursor: pointer;
         }
-        body.sidebar-collapsed .sidebar-fab { display: inline-flex; }
+
+        body.sidebar-collapsed .sidebar-fab {
+            display: inline-flex;
+        }
 
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
             }
+
             .sidebar {
                 width: 100%;
                 height: auto;
                 max-height: 40vh;
             }
+
             body.sidebar-collapsed .sidebar {
-                display: none; /* 移动端直接隐藏 */
+                display: none;
+                /* 移动端直接隐藏 */
             }
         }
 
         @media (max-width: 768px) {
-            body { flex-direction: column; }
+            body {
+                flex-direction: column;
+            }
 
             /* 移动端使用全屏覆盖的抽屉式侧边栏 */
             .sidebar {
@@ -247,19 +366,24 @@
                 height: 100vh;
                 max-height: none;
                 z-index: 1000;
-                box-shadow: 2px 0 12px rgba(0,0,0,0.2);
+                box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2);
                 transform: translateX(-100%);
                 transition: transform 0.25s ease;
             }
+
             /* 展开时从左侧滑入，覆盖全屏 */
             body:not(.sidebar-collapsed) .sidebar {
                 transform: translateX(0);
             }
 
-            .main-content { flex: 1; }
+            .main-content {
+                flex: 1;
+            }
 
             /* 折叠态时显示悬浮展开按钮 */
-            body.sidebar-collapsed .sidebar-fab { display: inline-flex; }
+            body.sidebar-collapsed .sidebar-fab {
+                display: inline-flex;
+            }
         }
     </style>
     <script src="/static/js/socket.io.js"></script>
@@ -275,7 +399,8 @@
     <div class="sidebar">
         <div class="sidebar-header">
             <h2 class="m-0">设备管理</h2>
-            <button id="sidebar-collapse-btn" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1" title="收起侧边栏">
+            <button id="sidebar-collapse-btn"
+                class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1" title="收起侧边栏">
                 <i class="bi bi-chevron-left"></i>
                 收起
             </button>
@@ -308,7 +433,32 @@
             </div>
         </div>
     </div>
-
+    <!-- 右侧 AI 边栏 -->
+    <div class="rightbar">
+        <div class="rightbar-header">
+            <h3 class="m-0 d-flex align-items-center gap-2">
+                <i class="bi bi-robot"></i>
+                <span>AI 聊天</span>
+            </h3>
+            <button id="rightbar-close" class="btn btn-sm btn-outline-secondary" title="收起 AI 边栏">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
+        <div class="rightbar-content">
+            <div class="card ai-chat">
+                <div class="card-body">
+                    <div id="ai-chat-container" class="chat-container">
+                        <div id="ai-chat-messages" class="chat-messages" aria-live="polite"></div>
+                    </div>
+                    <div class="input-group chat-input-row mt-2">
+                        <input id="ai-chat-input" type="text" class="form-control" placeholder="输入消息，按 Enter 发送">
+                        <button id="ai-chat-send" class="btn btn-primary">发送</button>
+                        <button id="ai-chat-stop" class="btn btn-outline-danger" disabled>停止</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- 右侧主内容区域 -->
     <div class="main-content">
         <div class="video-wrapper">
@@ -323,136 +473,146 @@
         </div>
         <!-- 兼容旧逻辑的隐藏状态元素，防止第三方代码或旧事件访问为空 -->
         <p id="status" class="visually-hidden"></p>
+
         
-        <!-- 控制按钮 -->
-        <div class="icon-container btn-toolbar justify-content-center gap-2 p-2" style="display: none;">
-            <div class="btn-group btn-group-sm" role="group">
-                <button id="power-btn" class="btn btn-outline-light" title="电源"><i class="bi bi-power"></i></button>
-                <button id="volume-down-btn" class="btn btn-outline-light" title="音量-"><i class="bi bi-volume-down"></i></button>
-                <button id="volume-up-btn" class="btn btn-outline-light" title="音量+"><i class="bi bi-volume-up"></i></button>
-                <button id="back-btn" class="btn btn-outline-light" title="返回"><i class="bi bi-arrow-left"></i></button>
-                <button id="home-btn" class="btn btn-outline-light" title="主页"><i class="bi bi-house"></i></button>
-                <button id="menu-btn" class="btn btn-outline-light" title="菜单"><i class="bi bi-list"></i></button>
+
+
+            <!-- 控制按钮（移除电源/音量，新增 AI 按钮） -->
+            <div class="icon-container btn-toolbar justify-content-center gap-2 p-2" style="display: none;">
+                <div class="btn-group btn-group-sm" role="group">
+                    <button id="back-btn" class="btn btn-outline-light" title="返回"><i class="bi bi-arrow-left"></i></button>
+                    <button id="home-btn" class="btn btn-outline-light" title="主页"><i class="bi bi-house"></i></button>
+                    <button id="menu-btn" class="btn btn-outline-light" title="菜单"><i class="bi bi-list"></i></button>
+                    <button id="ai-btn" class="btn btn-outline-light" title="AI 聊天"><i class="bi bi-robot"></i></button>
+                </div>
             </div>
         </div>
-    </div>
-    <script src="/static/js/jmuxer.min.js"></script>
-    <script>
-        const videoElement = document.getElementById('player');
-        const sidebarCollapseBtn = document.getElementById('sidebar-collapse-btn');
-        const sidebarFabBtn = document.getElementById('sidebar-fab');
-        const sidebarEl = document.querySelector('.sidebar');
-        let jmuxerReady = false;
-        let lastInit = null; // 暂存SPS/PPS以避免初始化丢失
-        let currentScreenWidth = null;
-        let currentScreenHeight = null;
-        const screenSizeText = document.getElementById('screen-size');
-        let awaitingKeyframe = false; // 重建后等待首个IDR再开始喂帧
-        let hasStartedStream = false; // 区分首次启动与中途分辨率变化
-        // 最大缩放百分比，防止视频铺满导致页面抖动（相对容器尺寸）
-        const maxScalePercent = { width: 0.95, height: 0.95 };
-        // 不同方向的显示缩放比例（可根据需要调整）
-        const orientationScale = { landscape: 1.0, portrait: 0.9 };
+        <script src="/static/js/jmuxer.min.js"></script>
+        <script>
+            const videoElement = document.getElementById('player');
+            const sidebarCollapseBtn = document.getElementById('sidebar-collapse-btn');
+            const sidebarFabBtn = document.getElementById('sidebar-fab');
+            const sidebarEl = document.querySelector('.sidebar');
+            let jmuxerReady = false;
+            let lastInit = null; // 暂存SPS/PPS以避免初始化丢失
+            let currentScreenWidth = null;
+            let currentScreenHeight = null;
+            const screenSizeText = document.getElementById('screen-size');
+            let awaitingKeyframe = false; // 重建后等待首个IDR再开始喂帧
+            let hasStartedStream = false; // 区分首次启动与中途分辨率变化
+            // 最大缩放百分比，防止视频铺满导致页面抖动（相对容器尺寸）
+            const maxScalePercent = { width: 0.95, height: 0.95 };
+            // 不同方向的显示缩放比例（可根据需要调整）
+            const orientationScale = { landscape: 1.0, portrait: 0.9 };
 
-        function updateVideoDisplay(w, h) {
-            try {
-                const container = document.querySelector('.video-wrapper');
-                if (!container || !videoElement || !w || !h) return;
-                const cw = container.clientWidth;
-                const ch = container.clientHeight;
-                if (cw <= 0 || ch <= 0) return;
+            function updateVideoDisplay(w, h) {
+                try {
+                    const container = document.querySelector('.video-wrapper');
+                    if (!container || !videoElement || !w || !h) return;
+                    const cw = container.clientWidth;
+                    const ch = container.clientHeight;
+                    if (cw <= 0 || ch <= 0) return;
 
-                const videoAspect = w / h;
-                const containerAspect = cw / ch;
-                const orientation = w >= h ? 'landscape' : 'portrait';
-                const scale = Math.min(Math.max(orientationScale[orientation] || 1.0, 0.5), 1.0);
-                const maxW = Math.floor(cw * (maxScalePercent.width || 1.0));
-                const maxH = Math.floor(ch * (maxScalePercent.height || 1.0));
+                    const videoAspect = w / h;
+                    const containerAspect = cw / ch;
+                    const orientation = w >= h ? 'landscape' : 'portrait';
+                    const scale = Math.min(Math.max(orientationScale[orientation] || 1.0, 0.5), 1.0);
+                    const maxW = Math.floor(cw * (maxScalePercent.width || 1.0));
+                    const maxH = Math.floor(ch * (maxScalePercent.height || 1.0));
 
-                if (videoAspect >= containerAspect) {
-                    // 以容器宽度为限制，按比例缩放高度，并限制最大百分比
-                    const targetWidth = Math.min(Math.floor(cw * scale), maxW);
-                    const targetHeight = Math.floor(targetWidth / videoAspect);
-                    videoElement.style.width = targetWidth + 'px';
-                    videoElement.style.height = targetHeight + 'px';
-                } else {
-                    // 以容器高度为限制，按比例缩放宽度，并限制最大百分比
-                    const targetHeight = Math.min(Math.floor(ch * scale), maxH);
-                    const targetWidth = Math.floor(targetHeight * videoAspect);
-                    videoElement.style.height = targetHeight + 'px';
-                    videoElement.style.width = targetWidth + 'px';
+                    if (videoAspect >= containerAspect) {
+                        // 以容器宽度为限制，按比例缩放高度，并限制最大百分比
+                        const targetWidth = Math.min(Math.floor(cw * scale), maxW);
+                        const targetHeight = Math.floor(targetWidth / videoAspect);
+                        videoElement.style.width = targetWidth + 'px';
+                        videoElement.style.height = targetHeight + 'px';
+                    } else {
+                        // 以容器高度为限制，按比例缩放宽度，并限制最大百分比
+                        const targetHeight = Math.min(Math.floor(ch * scale), maxH);
+                        const targetWidth = Math.floor(targetHeight * videoAspect);
+                        videoElement.style.height = targetHeight + 'px';
+                        videoElement.style.width = targetWidth + 'px';
+                    }
+                    // 额外设置最大边界，防止极端情况下溢出
+                    videoElement.style.maxWidth = maxW + 'px';
+                    videoElement.style.maxHeight = maxH + 'px';
+                } catch (e) {
+                    console.warn('updateVideoDisplay error:', e);
                 }
-                // 额外设置最大边界，防止极端情况下溢出
-                videoElement.style.maxWidth = maxW + 'px';
-                videoElement.style.maxHeight = maxH + 'px';
-            } catch (e) {
-                console.warn('updateVideoDisplay error:', e);
             }
-        }
 
-        function updateOrientationClass(w, h) {
-            const isLandscape = w >= h;
-            document.body.classList.toggle('orientation-landscape', isLandscape);
-            document.body.classList.toggle('orientation-portrait', !isLandscape);
-        }
-
-        function updateScreenSizeLabel(w, h) {
-            if (screenSizeText) {
-                const orientation = w >= h ? '横向' : '纵向';
-                screenSizeText.textContent = `屏幕尺寸：${w} x ${h}（${orientation}）`;
+            function updateOrientationClass(w, h) {
+                const isLandscape = w >= h;
+                document.body.classList.toggle('orientation-landscape', isLandscape);
+                document.body.classList.toggle('orientation-portrait', !isLandscape);
             }
-        }
 
-        // 侧边栏折叠/展开
-        function applySidebarState(collapsed) {
-            document.body.classList.toggle('sidebar-collapsed', collapsed);
-            try {
-                localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0');
-            } catch (e) {}
-            if (currentScreenWidth && currentScreenHeight) {
-                updateVideoDisplay(currentScreenWidth, currentScreenHeight);
-            }
-        }
-        function collapseSidebar() { applySidebarState(true); }
-        function expandSidebar() { applySidebarState(false); }
-        // 初始化状态
-        (function initSidebarState(){
-            const isMobile = window.matchMedia('(max-width: 768px)').matches;
-            try {
-                const saved = localStorage.getItem('sidebarCollapsed');
-                if (saved === null && isMobile) {
-                    // 移动端默认折叠，点击悬浮按钮再展开为全屏覆盖抽屉
-                    applySidebarState(true);
-                } else {
-                    applySidebarState(saved === '1');
+            function updateScreenSizeLabel(w, h) {
+                if (screenSizeText) {
+                    const orientation = w >= h ? '横向' : '纵向';
+                    screenSizeText.textContent = `屏幕尺寸：${w} x ${h}（${orientation}）`;
                 }
-            } catch (e) {
-                // 失败时移动端默认折叠，桌面端默认不折叠
-                applySidebarState(isMobile ? true : false);
             }
-        })();
-        // 事件绑定
-        if (sidebarCollapseBtn) {
-            sidebarCollapseBtn.addEventListener('click', () => collapseSidebar());
-        }
-        if (sidebarFabBtn) {
-            sidebarFabBtn.addEventListener('click', () => expandSidebar());
-        }
 
-        function createJMuxer() {
-            return new JMuxer({
-                node: 'player',
-                mode: 'video',
-                flushingTime: 0,
-                fps: 60,
-                clearBuffer: true,
-                onReady: () => {
-                    try {
-                        jmuxerReady = true;
-                        showToast('MSE 初始化完成，等待数据...', 'success');
-                        if (videoElement) {
-                            videoElement.controls = false;
-                            videoElement.style.cssText = `
+            // 侧边栏折叠/展开
+            function applySidebarState(collapsed) {
+                document.body.classList.toggle('sidebar-collapsed', collapsed);
+                try {
+                    localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0');
+                } catch (e) { }
+                if (currentScreenWidth && currentScreenHeight) {
+                    updateVideoDisplay(currentScreenWidth, currentScreenHeight);
+                }
+            }
+            function collapseSidebar() { applySidebarState(true); }
+            function expandSidebar() { applySidebarState(false); }
+            // 初始化状态
+            (function initSidebarState() {
+                const isMobile = window.matchMedia('(max-width: 768px)').matches;
+                try {
+                    const saved = localStorage.getItem('sidebarCollapsed');
+                    if (saved === null && isMobile) {
+                        // 移动端默认折叠，点击悬浮按钮再展开为全屏覆盖抽屉
+                        applySidebarState(true);
+                    } else {
+                        applySidebarState(saved === '1');
+                    }
+                } catch (e) {
+                    // 失败时移动端默认折叠，桌面端默认不折叠
+                    applySidebarState(isMobile ? true : false);
+                }
+            })();
+            // 初始化右侧 AI 边栏状态（默认收起）
+            (function initRightbarState() {
+                try {
+                    const saved = localStorage.getItem('rightbarCollapsed');
+                    applyRightbarState(saved !== '0');
+                } catch (e) {
+                    applyRightbarState(true);
+                }
+            })();
+            // 事件绑定
+            if (sidebarCollapseBtn) {
+                sidebarCollapseBtn.addEventListener('click', () => collapseSidebar());
+            }
+            if (sidebarFabBtn) {
+                sidebarFabBtn.addEventListener('click', () => expandSidebar());
+            }
+
+            function createJMuxer() {
+                return new JMuxer({
+                    node: 'player',
+                    mode: 'video',
+                    flushingTime: 0,
+                    fps: 60,
+                    clearBuffer: true,
+                    onReady: () => {
+                        try {
+                            jmuxerReady = true;
+                            showToast('MSE 初始化完成，等待数据...', 'success');
+                            if (videoElement) {
+                                videoElement.controls = false;
+                                videoElement.style.cssText = `
                                 -webkit-media-controls: none !important;
                                 -webkit-media-controls-enclosure: none !important;
                                 -webkit-media-controls-panel: none !important;
@@ -466,297 +626,304 @@
                                 -moz-controls: none !important;
                                 -ms-media-controls: none !important;
                             `;
-                        }
-                        // 如果此前握有SPS/PPS，准备好后立刻喂入
-                        if (lastInit) {
-                            try {
-                                jmuxer.feed({ video: lastInit["sps"] });
-                                jmuxer.feed({ video: lastInit["pps"] });
-                                // 主动触发播放，实际开始需等待关键帧
-                                videoElement.play().catch(() => {});
-                                hasStartedStream = true;
-                                lastInit = null;
-                            } catch (e) {
-                                console.warn('Feed init on ready error:', e);
                             }
+                            // 如果此前握有SPS/PPS，准备好后立刻喂入
+                            if (lastInit) {
+                                try {
+                                    jmuxer.feed({ video: lastInit["sps"] });
+                                    jmuxer.feed({ video: lastInit["pps"] });
+                                    // 主动触发播放，实际开始需等待关键帧
+                                    videoElement.play().catch(() => { });
+                                    hasStartedStream = true;
+                                    lastInit = null;
+                                } catch (e) {
+                                    console.warn('Feed init on ready error:', e);
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('onReady handler error:', e);
                         }
-                    } catch (e) {
-                        console.warn('onReady handler error:', e);
+                    },
+                    onError: (err) => {
+                        showToast('MSE 错误: ' + err.message, 'danger');
                     }
-                },
-                onError: (err) => {
-                    showToast('MSE 错误: ' + err.message, 'danger');
-                }
-            });
-        }
-        let jmuxer = createJMuxer();
-        function showToast(message, type = 'info') {
-            try {
-                const container = document.getElementById('toast-container');
-                if (!container) return;
-                const valid = ['primary','secondary','success','danger','warning','info','light','dark'];
-                const tone = valid.includes(type) ? type : 'info';
-                const el = document.createElement('div');
-                el.className = `toast align-items-center text-bg-${tone} border-0 mb-2`;
-                el.setAttribute('role', 'alert');
-                el.setAttribute('aria-live', 'assertive');
-                el.setAttribute('aria-atomic', 'true');
-                el.innerHTML = `
+                });
+            }
+            let jmuxer = createJMuxer();
+            function showToast(message, type = 'info') {
+                try {
+                    const container = document.getElementById('toast-container');
+                    if (!container) return;
+                    const valid = ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark'];
+                    const tone = valid.includes(type) ? type : 'info';
+                    const el = document.createElement('div');
+                    el.className = `toast align-items-center text-bg-${tone} border-0 mb-2`;
+                    el.setAttribute('role', 'alert');
+                    el.setAttribute('aria-live', 'assertive');
+                    el.setAttribute('aria-atomic', 'true');
+                    el.innerHTML = `
                     <div class=\"d-flex\">
                         <div class=\"toast-body\">${message}</div>
                         <button type=\"button\" class=\"btn-close btn-close-white me-2 m-auto\" data-bs-dismiss=\"toast\" aria-label=\"Close\"></button>
                     </div>`;
-                container.appendChild(el);
-                const toast = new bootstrap.Toast(el, { delay: 3000 });
-                el.addEventListener('hidden.bs.toast', () => el.remove());
-                toast.show();
-            } catch (e) {
-                console.warn('Toast show error:', e);
-            }
-        }
-
-        const socket = io({
-            reconnection: false,
-            autoConnect: true
-        });
-
-        var input = null;
-        var currentMirroringDevice = null;  // 跟踪当前正在镜像的设备
-        let pendingDisconnectAfterStop = new Set(); // 标记需在停止镜像后断开连接的设备
-        let pendingStopTimers = new Map(); // 设备停止镜像的超时定时器
-        let controlsBound = false; // 防止重复绑定控制按钮事件
-
-        function resetPlayer() {
-            try {
-                if (jmuxer && typeof jmuxer.destroy === 'function') {
-                    jmuxer.destroy();
-                }
-            } catch (e) {
-                console.warn('JMuxer reset error:', e);
-            }
-            jmuxer = null;
-            jmuxerReady = false;
-            lastInit = null;
-            try {
-                if (videoElement) {
-                    videoElement.pause();
-                    videoElement.removeAttribute('src');
-                    videoElement.load();
-                }
-            } catch (e) {
-                console.warn('Video element reset error:', e);
-            }
-        }
-        
-        function initInput(width, height) {
-            function input_data_cb(data) {
-                if (currentMirroringDevice) {
-                    socket.emit('control_data', {
-                        device_id: currentMirroringDevice,
-                        data: data
-                    });
-                } else {
-                    console.warn('No device is currently mirroring');
+                    container.appendChild(el);
+                    const toast = new bootstrap.Toast(el, { delay: 3000 });
+                    el.addEventListener('hidden.bs.toast', () => el.remove());
+                    toast.show();
+                } catch (e) {
+                    console.warn('Toast show error:', e);
                 }
             }
 
-            input = new ScrcpyInput(input_data_cb, videoElement, width, height, false);
-            
-            // 设置视频元素焦点以接收键盘事件
-            videoElement.focus();
+            const socket = io({
+                reconnection: false,
+                autoConnect: true
+            });
 
-            if (!controlsBound) {
-                const powerBtn = document.getElementById('power-btn');
-                const volumeDownBtn = document.getElementById('volume-down-btn');
-                const volumeUpBtn = document.getElementById('volume-up-btn');
-                const backBtn = document.getElementById('back-btn');
-                const homeBtn = document.getElementById('home-btn');
-                const menuBtn = document.getElementById('menu-btn');
+            var input = null;
+            var currentMirroringDevice = null;  // 跟踪当前正在镜像的设备
+            let pendingDisconnectAfterStop = new Set(); // 标记需在停止镜像后断开连接的设备
+            let pendingStopTimers = new Map(); // 设备停止镜像的超时定时器
+            let controlsBound = false; // 防止重复绑定控制按钮事件
 
-                powerBtn.addEventListener('mousedown', function () {
-                    input.screen_on_off(0);
-                });
-                powerBtn.addEventListener('mouseup', function () {
-                    input.screen_on_off(1);
-                });
-
-                volumeDownBtn.addEventListener('mousedown', (event) => {
-                    input.snedKeyCode(event, 0, 25);
-                });
-                volumeDownBtn.addEventListener('mouseup', (event) => {
-                    input.snedKeyCode(event, 1, 25);
-                });
-                volumeUpBtn.addEventListener('mousedown', (event) => {
-                    input.snedKeyCode(event, 0, 24);
-                });
-                volumeUpBtn.addEventListener('mouseup', (event) => {
-                    input.snedKeyCode(event, 1, 24);
-                });
-                backBtn.addEventListener('mousedown', (event) => {
-                    input.snedKeyCode(event, 0, 4);
-                });
-                backBtn.addEventListener('mouseup', (event) => {
-                    input.snedKeyCode(event, 1, 4);
-                });
-                homeBtn.addEventListener('mousedown', (event) => {
-                    input.snedKeyCode(event, 0, 3);
-                });
-                homeBtn.addEventListener('mouseup', (event) => {
-                    input.snedKeyCode(event, 1, 3);
-                });
-                menuBtn.addEventListener('mousedown', (event) => {
-                    input.snedKeyCode(event, 0, 187);
-                });
-                menuBtn.addEventListener('mouseup', (event) => {
-                    input.snedKeyCode(event, 1, 187);
-                });
-
-                controlsBound = true;
+            function resetPlayer() {
+                try {
+                    if (jmuxer && typeof jmuxer.destroy === 'function') {
+                        jmuxer.destroy();
+                    }
+                } catch (e) {
+                    console.warn('JMuxer reset error:', e);
+                }
+                jmuxer = null;
+                jmuxerReady = false;
+                lastInit = null;
+                try {
+                    if (videoElement) {
+                        videoElement.pause();
+                        videoElement.removeAttribute('src');
+                        videoElement.load();
+                    }
+                } catch (e) {
+                    console.warn('Video element reset error:', e);
+                }
             }
-        }
 
-        let parser = new VideoParser(({ type, data }) => {
-            if (type === 'nalu') {
-                if (jmuxerReady && jmuxer) {
-                    // 等待关键帧(IDR)再开始喂数据，避免黑屏
-                    const naluType = data[4] & 0x1f;
-                    if (awaitingKeyframe) {
-                        if (naluType === 5) { // IDR
-                            awaitingKeyframe = false;
-                            jmuxer.feed({ video: data });
-                            videoElement.play().catch(() => {});
-                        } else {
-                            return;
-                        }
+            function initInput(width, height) {
+                function input_data_cb(data) {
+                    if (currentMirroringDevice) {
+                        socket.emit('control_data', {
+                            device_id: currentMirroringDevice,
+                            data: data
+                        });
                     } else {
-                        jmuxer.feed({ video: data });
+                        console.warn('No device is currently mirroring');
                     }
                 }
-            } else if (type === 'init') {
-                if (jmuxerReady && jmuxer) {
-                    jmuxer.feed({ video: data["sps"] });
-                    jmuxer.feed({ video: data["pps"] });
-                    videoElement.play().catch(() => {});
-                    hasStartedStream = true;
-                } else {
-                    // 暂存，等待JMuxer准备好再喂入
-                    lastInit = data;
-                }
-            } else if (type === 'screen_size') {
-                currentScreenWidth = data["width"];
-                currentScreenHeight = data["height"];
-                updateVideoDisplay(currentScreenWidth, currentScreenHeight);
-                updateOrientationClass(currentScreenWidth, currentScreenHeight);
-                updateScreenSizeLabel(currentScreenWidth, currentScreenHeight);
-                initInput(currentScreenWidth, currentScreenHeight);
-            } else if (type === 'size_change') {
-                // 若已开始播放，视为中途分辨率变化；首启阶段不重置，避免“刚开始无画面”
-                currentScreenWidth = data["width"];
-                currentScreenHeight = data["height"];
-                if (hasStartedStream) {
-                    resetPlayer();
-                    if (!jmuxer) {
-                        jmuxer = createJMuxer();
+
+                input = new ScrcpyInput(input_data_cb, videoElement, width, height, false);
+
+                // 设置视频元素焦点以接收键盘事件
+                videoElement.focus();
+
+                if (!controlsBound) {
+                    const aiBtn = document.getElementById('ai-btn');
+                    const backBtn = document.getElementById('back-btn');
+                    const homeBtn = document.getElementById('home-btn');
+                    const menuBtn = document.getElementById('menu-btn');
+
+                    if (aiBtn) {
+                        aiBtn.addEventListener('click', () => {
+                            toggleAiDrawer();
+                        });
                     }
-                    awaitingKeyframe = true;
+                    backBtn.addEventListener('mousedown', (event) => {
+                        input.snedKeyCode(event, 0, 4);
+                    });
+                    backBtn.addEventListener('mouseup', (event) => {
+                        input.snedKeyCode(event, 1, 4);
+                    });
+                    homeBtn.addEventListener('mousedown', (event) => {
+                        input.snedKeyCode(event, 0, 3);
+                    });
+                    homeBtn.addEventListener('mouseup', (event) => {
+                        input.snedKeyCode(event, 1, 3);
+                    });
+                    menuBtn.addEventListener('mousedown', (event) => {
+                        input.snedKeyCode(event, 0, 187);
+                    });
+                    menuBtn.addEventListener('mouseup', (event) => {
+                        input.snedKeyCode(event, 1, 187);
+                    });
+
+                    controlsBound = true;
                 }
-                if (input) {
-                    input.resizeScreen(currentScreenWidth, currentScreenHeight);
+            }
+
+            let parser = new VideoParser(({ type, data }) => {
+                if (type === 'nalu') {
+                    if (jmuxerReady && jmuxer) {
+                        // 等待关键帧(IDR)再开始喂数据，避免黑屏
+                        const naluType = data[4] & 0x1f;
+                        if (awaitingKeyframe) {
+                            if (naluType === 5) { // IDR
+                                awaitingKeyframe = false;
+                                jmuxer.feed({ video: data });
+                                videoElement.play().catch(() => { });
+                            } else {
+                                return;
+                            }
+                        } else {
+                            jmuxer.feed({ video: data });
+                        }
+                    }
+                } else if (type === 'init') {
+                    if (jmuxerReady && jmuxer) {
+                        jmuxer.feed({ video: data["sps"] });
+                        jmuxer.feed({ video: data["pps"] });
+                        videoElement.play().catch(() => { });
+                        hasStartedStream = true;
+                    } else {
+                        // 暂存，等待JMuxer准备好再喂入
+                        lastInit = data;
+                    }
+                } else if (type === 'screen_size') {
+                    currentScreenWidth = data["width"];
+                    currentScreenHeight = data["height"];
+                    updateVideoDisplay(currentScreenWidth, currentScreenHeight);
+                    updateOrientationClass(currentScreenWidth, currentScreenHeight);
+                    updateScreenSizeLabel(currentScreenWidth, currentScreenHeight);
+                    initInput(currentScreenWidth, currentScreenHeight);
+                } else if (type === 'size_change') {
+                    // 若已开始播放，视为中途分辨率变化；首启阶段不重置，避免“刚开始无画面”
+                    currentScreenWidth = data["width"];
+                    currentScreenHeight = data["height"];
+                    if (hasStartedStream) {
+                        resetPlayer();
+                        if (!jmuxer) {
+                            jmuxer = createJMuxer();
+                        }
+                        awaitingKeyframe = true;
+                    }
+                    if (input) {
+                        input.resizeScreen(currentScreenWidth, currentScreenHeight);
+                    }
+                    updateVideoDisplay(currentScreenWidth, currentScreenHeight);
+                    updateOrientationClass(currentScreenWidth, currentScreenHeight);
+                    updateScreenSizeLabel(currentScreenWidth, currentScreenHeight);
                 }
-                updateVideoDisplay(currentScreenWidth, currentScreenHeight);
-                updateOrientationClass(currentScreenWidth, currentScreenHeight);
-                updateScreenSizeLabel(currentScreenWidth, currentScreenHeight);
+            });
+
+            socket.on('video_data', (data) => {
+                try {
+                    const newData = data instanceof Uint8Array ? data : new Uint8Array(data);
+                    parser.appendData(newData);
+                } catch (e) {
+                    console.warn('Append video data error:', e, 'typeof data:', typeof data);
+                }
+            });
+
+            socket.on('connect', () => {
+                showToast('已连接，正在接收视频数据...', 'success');
+            });
+
+            // 使用 Socket.IO 事件
+            socket.on('disconnect', () => {
+                showToast('连接已断开，请刷新页面重新连接', 'warning');
+                showConnectionPanel();
+            });
+
+            socket.on('connect_error', (error) => {
+                showToast('连接错误: ' + (error?.message || error), 'danger');
+                showConnectionPanel();
+            });
+
+            window.addEventListener('beforeunload', () => {
+                socket.disconnect();
+            });
+
+            // 容器尺寸变化时自适应视频显示尺寸
+            window.addEventListener('resize', () => {
+                if (currentScreenWidth && currentScreenHeight) {
+                    updateVideoDisplay(currentScreenWidth, currentScreenHeight);
+                }
+            });
+
+            // 设备连接相关功能
+            const connectBtn = document.getElementById('connect-btn');
+            const deviceIpInput = document.getElementById('device-ip');
+            const devicePortInput = document.getElementById('device-port');
+            const iconContainer = document.querySelector('.icon-container');
+            // 右侧 AI 边栏控制
+            function applyRightbarState(collapsed) {
+                document.body.classList.toggle('rightbar-collapsed', collapsed);
+                try { localStorage.setItem('rightbarCollapsed', collapsed ? '1' : '0'); } catch (e) {}
             }
-        });
-
-        socket.on('video_data', (data) => {
-            try {
-                const newData = data instanceof Uint8Array ? data : new Uint8Array(data);
-                parser.appendData(newData);
-            } catch (e) {
-                console.warn('Append video data error:', e, 'typeof data:', typeof data);
+            function collapseRightbar() { applyRightbarState(true); }
+            function expandRightbar() { applyRightbarState(false); }
+            function toggleRightbar() {
+                const collapsed = document.body.classList.contains('rightbar-collapsed');
+                applyRightbarState(!collapsed);
             }
-        });
+            // 兼容旧命名（此前用于底部抽屉）
+            function openAiDrawer() { expandRightbar(); }
+            function closeAiDrawer() { collapseRightbar(); }
+            function toggleAiDrawer() { toggleRightbar(); }
 
-        socket.on('connect', () => {
-            showToast('已连接，正在接收视频数据...', 'success');
-        });
+            // 右侧边栏关闭按钮
+            (function bindRightbarClose() {
+                const rbClose = document.getElementById('rightbar-close');
+                if (rbClose) {
+                    rbClose.addEventListener('click', () => collapseRightbar());
+                }
+            })();
+            const deviceListContent = document.getElementById('device-list-content');
 
-        // 使用 Socket.IO 事件
-        socket.on('disconnect', () => {
-            showToast('连接已断开，请刷新页面重新连接', 'warning');
-            showConnectionPanel();
-        });
-
-        socket.on('connect_error', (error) => {
-            showToast('连接错误: ' + (error?.message || error), 'danger');
-            showConnectionPanel();
-        });
-
-        window.addEventListener('beforeunload', () => {
-            socket.disconnect();
-        });
-
-        // 容器尺寸变化时自适应视频显示尺寸
-        window.addEventListener('resize', () => {
-            if (currentScreenWidth && currentScreenHeight) {
-                updateVideoDisplay(currentScreenWidth, currentScreenHeight);
-            }
-        });
-
-        // 设备连接相关功能
-        const connectBtn = document.getElementById('connect-btn');
-        const deviceIpInput = document.getElementById('device-ip');
-        const devicePortInput = document.getElementById('device-port');
-        const iconContainer = document.querySelector('.icon-container');
-        const deviceListContent = document.getElementById('device-list-content');
-        
-        // 规范化与校验地址（支持IPv4与主机名）
-        function normalizeHost(input) {
-            let host = (input || '').trim();
-            // 替换常见全角或符号为英文点
-            host = host.replace(/[，、。；；\s]+/g, '.');
-            host = host.replace(/\.+/g, '.'); // 合并多余点
-            // 去除结尾的点
-            host = host.replace(/\.$/, '');
-            // 若为IPv4格式，去除每段的前导零
-            if (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(host)) {
-                host = host.split('.').map(seg => String(parseInt(seg, 10))).join('.');
-            }
-            return host;
-        }
-
-        function isValidIPv4(ip) {
-            if (!/^(?:\d{1,3}\.){3}\d{1,3}$/.test(ip)) return false;
-            const parts = ip.split('.').map(n => parseInt(n, 10));
-            return parts.every(n => n >= 0 && n <= 255);
-        }
-
-        function isValidHostname(name) {
-            if (name === 'localhost') return true;
-            // RFC 1035 简化校验：标签由字母数字与中划线组成，不能以中划线开头或结尾
-            const hostnameRegex = /^(?=.{1,253}$)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)(?:\.(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?))*$/;
-            return hostnameRegex.test(name);
-        }
-
-        let currentDeviceId = null;
-
-        function updateDeviceList(devices) {
-            if (!devices || devices.length === 0) {
-                deviceListContent.innerHTML = '<div class="list-group-item py-2"><small class="text-muted">没有已连接的设备</small></div>';
-                return;
+            // 规范化与校验地址（支持IPv4与主机名）
+            function normalizeHost(input) {
+                let host = (input || '').trim();
+                // 替换常见全角或符号为英文点
+                host = host.replace(/[，、。；；\s]+/g, '.');
+                host = host.replace(/\.+/g, '.'); // 合并多余点
+                // 去除结尾的点
+                host = host.replace(/\.$/, '');
+                // 若为IPv4格式，去除每段的前导零
+                if (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(host)) {
+                    host = host.split('.').map(seg => String(parseInt(seg, 10))).join('.');
+                }
+                return host;
             }
 
-            deviceListContent.innerHTML = devices.map(device => {
-                const tcpAddr = device.id; // 后端当前仅提供 id，可视为 TCP 地址
-                const deviceName = device.name || device.id; // 后端未提供名称时回退为 id
-                const statusText = `状态：${device.state}`;
+            function isValidIPv4(ip) {
+                if (!/^(?:\d{1,3}\.){3}\d{1,3}$/.test(ip)) return false;
+                const parts = ip.split('.').map(n => parseInt(n, 10));
+                return parts.every(n => n >= 0 && n <= 255);
+            }
 
-                const actionButtons = device.is_mirroring
-                    ? `<button class="stop-mirror-btn btn btn-danger btn-sm" data-device="${device.id}">停止镜像</button>`
-                    : `<button class="start-mirror-btn btn btn-success btn-sm" data-device="${device.id}">开始镜像</button>`;
+            function isValidHostname(name) {
+                if (name === 'localhost') return true;
+                // RFC 1035 简化校验：标签由字母数字与中划线组成，不能以中划线开头或结尾
+                const hostnameRegex = /^(?=.{1,253}$)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)(?:\.(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?))*$/;
+                return hostnameRegex.test(name);
+            }
 
-                return `
+            let currentDeviceId = null;
+
+            function updateDeviceList(devices) {
+                if (!devices || devices.length === 0) {
+                    deviceListContent.innerHTML = '<div class="list-group-item py-2"><small class="text-muted">没有已连接的设备</small></div>';
+                    return;
+                }
+
+                deviceListContent.innerHTML = devices.map(device => {
+                    const tcpAddr = device.id; // 后端当前仅提供 id，可视为 TCP 地址
+                    const deviceName = device.name || device.id; // 后端未提供名称时回退为 id
+                    const statusText = `状态：${device.state}`;
+
+                    const actionButtons = device.is_mirroring
+                        ? `<button class="stop-mirror-btn btn btn-danger btn-sm" data-device="${device.id}">停止镜像</button>`
+                        : `<button class="start-mirror-btn btn btn-success btn-sm" data-device="${device.id}">开始镜像</button>`;
+
+                    return `
                     <div class="list-group-item">
                         <div class="d-flex w-100 justify-content-between align-items-center">
                             <span class="fw-semibold">${deviceName}</span>
@@ -769,197 +936,599 @@
                         </div>
                     </div>
                 `;
-            }).join('');
+                }).join('');
 
-            // 添加事件监听
-            deviceListContent.querySelectorAll('.start-mirror-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const deviceId = btn.getAttribute('data-device');
-                    socket.emit('start_mirror', { device_id: deviceId });
+                // 添加事件监听
+                deviceListContent.querySelectorAll('.start-mirror-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const deviceId = btn.getAttribute('data-device');
+                        socket.emit('start_mirror', { device_id: deviceId });
+                    });
                 });
-            });
 
-            deviceListContent.querySelectorAll('.stop-mirror-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const deviceId = btn.getAttribute('data-device');
-                    socket.emit('stop_mirror', { device_id: deviceId });
-                });
-            });
-
-            deviceListContent.querySelectorAll('.disconnect-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const deviceId = btn.getAttribute('data-device');
-                    // 若该设备正在镜像，先停止镜像，待停止事件回调后再断开
-                    if (currentMirroringDevice && currentMirroringDevice === deviceId) {
-                        showToast(`设备 ${deviceId} 正在镜像，先停止后断开连接...`, 'info');
-                        pendingDisconnectAfterStop.add(deviceId);
+                deviceListContent.querySelectorAll('.stop-mirror-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const deviceId = btn.getAttribute('data-device');
                         socket.emit('stop_mirror', { device_id: deviceId });
-                        // 设置超时保护，若在限定时间内未收到停止事件则直接断开
-                        const timeoutMs = 5000;
-                        const t = setTimeout(() => {
-                            if (pendingDisconnectAfterStop.has(deviceId)) {
-                                showToast(`停止镜像超时，直接断开设备 ${deviceId}`, 'warning');
-                                socket.emit('disconnect_device', { device_id: deviceId });
-                                pendingDisconnectAfterStop.delete(deviceId);
+                    });
+                });
+
+                deviceListContent.querySelectorAll('.disconnect-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const deviceId = btn.getAttribute('data-device');
+                        // 若该设备正在镜像，先停止镜像，待停止事件回调后再断开
+                        if (currentMirroringDevice && currentMirroringDevice === deviceId) {
+                            showToast(`设备 ${deviceId} 正在镜像，先停止后断开连接...`, 'info');
+                            pendingDisconnectAfterStop.add(deviceId);
+                            socket.emit('stop_mirror', { device_id: deviceId });
+                            // 设置超时保护，若在限定时间内未收到停止事件则直接断开
+                            const timeoutMs = 5000;
+                            const t = setTimeout(() => {
+                                if (pendingDisconnectAfterStop.has(deviceId)) {
+                                    showToast(`停止镜像超时，直接断开设备 ${deviceId}`, 'warning');
+                                    socket.emit('disconnect_device', { device_id: deviceId });
+                                    pendingDisconnectAfterStop.delete(deviceId);
+                                }
+                                pendingStopTimers.delete(deviceId);
+                            }, timeoutMs);
+                            pendingStopTimers.set(deviceId, t);
+                        } else {
+                            socket.emit('disconnect_device', { device_id: deviceId });
+                        }
+                    });
+                });
+            }
+
+            function showControlPanel() {
+                iconContainer.style.display = 'flex';
+            }
+
+            function hideControlPanel() {
+                iconContainer.style.display = 'none';
+                try { closeAiDrawer(); } catch (e) {}
+            }
+
+            // 防止未定义导致报错
+            function showConnectionPanel() {
+                hideControlPanel();
+            }
+
+            connectBtn.addEventListener('click', () => {
+                const hostRaw = deviceIpInput.value.trim();
+                const host = normalizeHost(hostRaw);
+                const portStr = devicePortInput.value.trim();
+                const port = parseInt(portStr, 10) || 5555;
+
+                if (!host) {
+                    showToast('请输入设备地址（IP或域名）', 'warning');
+                    return;
+                }
+                // 支持主机名或IPv4；若看起来像IPv4但不合法，则提示
+                const looksNumeric = /^([0-9]+\.)+[0-9]+$/.test(host);
+                const valid = isValidIPv4(host) || (!looksNumeric && isValidHostname(host));
+                if (!valid) {
+                    showToast('地址无效，请输入有效 IPv4 或域名，例如 127.0.0.1 或 android.local', 'danger');
+                    return;
+                }
+                showToast(`正在连接设备 ${host}:${port}...`, 'info');
+                socket.emit('connect_device', { ip: host, port });
+                // 不自动清空，保留便于修正输入
+            });
+
+            // 设备列表更新
+            socket.on('device_list_update', (devices) => {
+                updateDeviceList(devices);
+                showToast('设备列表已更新', 'info');
+            });
+
+            // 镜像状态事件
+            socket.on('mirror_started', (data) => {
+                showToast(`设备 ${data.device_id} 镜像已开启`, 'success');
+                currentMirroringDevice = data.device_id;  // 设置当前镜像设备
+                showControlPanel();
+                closeAiDrawer(); // 镜像开始默认隐藏抽屉
+                // 确保JMuxer可用
+                if (!jmuxer) {
+                    jmuxer = createJMuxer();
+                }
+            });
+
+            socket.on('mirror_stopped', (data) => {
+                showToast(`设备 ${data.device_id} 镜像已停止`, 'warning');
+                currentMirroringDevice = null;  // 清除当前镜像设备
+                hideControlPanel();
+                closeAiDrawer(); // 停止时隐藏抽屉
+                // 重置播放器和解析器，避免残留状态影响再次启动
+                resetPlayer();
+                if (input && typeof input.destroy === 'function') {
+                    input.destroy();
+                    input = null;
+                }
+                hasStartedStream = false;
+                // 清理停止镜像的超时定时器
+                if (pendingStopTimers.has(data.device_id)) {
+                    clearTimeout(pendingStopTimers.get(data.device_id));
+                    pendingStopTimers.delete(data.device_id);
+                }
+                // 若该设备在“停止后断开”的集合中，则继续执行断开连接
+                if (pendingDisconnectAfterStop && pendingDisconnectAfterStop.has(data.device_id)) {
+                    showToast(`已停止镜像，正在断开设备 ${data.device_id}...`, 'info');
+                    socket.emit('disconnect_device', { device_id: data.device_id });
+                    pendingDisconnectAfterStop.delete(data.device_id);
+                }
+                parser = new VideoParser(({ type, data }) => {
+                    if (type === 'nalu') {
+                        if (jmuxerReady && jmuxer) {
+                            const naluType = data[4] & 0x1f;
+                            if (awaitingKeyframe) {
+                                if (naluType === 5) {
+                                    awaitingKeyframe = false;
+                                    jmuxer.feed({ video: data });
+                                    videoElement.play().catch(() => { });
+                                } else {
+                                    return;
+                                }
+                            } else {
+                                jmuxer.feed({ video: data });
                             }
-                            pendingStopTimers.delete(deviceId);
-                        }, timeoutMs);
-                        pendingStopTimers.set(deviceId, t);
-                    } else {
-                        socket.emit('disconnect_device', { device_id: deviceId });
+                        }
+                    } else if (type === 'init') {
+                        if (jmuxerReady && jmuxer) {
+                            jmuxer.feed({ video: data["sps"] });
+                            jmuxer.feed({ video: data["pps"] });
+                            videoElement.play().catch(() => { });
+                            hasStartedStream = true;
+                        } else {
+                            lastInit = data;
+                        }
+                    } else if (type === 'screen_size') {
+                        const w = data["width"], h = data["height"];
+                        initInput(w, h);
+                        currentScreenWidth = w;
+                        currentScreenHeight = h;
+                        updateVideoDisplay(w, h);
+                        updateOrientationClass(w, h);
+                        updateScreenSizeLabel(w, h);
+                    } else if (type === 'size_change') {
+                        const w = data["width"], h = data["height"];
+                        currentScreenWidth = w;
+                        currentScreenHeight = h;
+                        if (hasStartedStream) {
+                            resetPlayer();
+                            if (!jmuxer) {
+                                jmuxer = createJMuxer();
+                            }
+                            awaitingKeyframe = true;
+                        }
+                        if (input) {
+                            input.resizeScreen(w, h);
+                        }
+                        updateVideoDisplay(w, h);
+                        updateOrientationClass(w, h);
+                        updateScreenSizeLabel(w, h);
                     }
                 });
             });
-        }
 
-        function showControlPanel() {
-            iconContainer.style.display = 'flex';
-        }
-
-        function hideControlPanel() {
-            iconContainer.style.display = 'none';
-        }
-
-        // 防止未定义导致报错
-        function showConnectionPanel() {
-            hideControlPanel();
-        }
-
-        connectBtn.addEventListener('click', () => {
-            const hostRaw = deviceIpInput.value.trim();
-            const host = normalizeHost(hostRaw);
-            const portStr = devicePortInput.value.trim();
-            const port = parseInt(portStr, 10) || 5555;
-
-            if (!host) {
-                showToast('请输入设备地址（IP或域名）', 'warning');
-                return;
-            }
-            // 支持主机名或IPv4；若看起来像IPv4但不合法，则提示
-            const looksNumeric = /^([0-9]+\.)+[0-9]+$/.test(host);
-            const valid = isValidIPv4(host) || (!looksNumeric && isValidHostname(host));
-            if (!valid) {
-                showToast('地址无效，请输入有效 IPv4 或域名，例如 127.0.0.1 或 android.local', 'danger');
-                return;
-            }
-            showToast(`正在连接设备 ${host}:${port}...`, 'info');
-            socket.emit('connect_device', { ip: host, port });
-            // 不自动清空，保留便于修正输入
-        });
-
-        // 设备列表更新
-        socket.on('device_list_update', (devices) => {
-            updateDeviceList(devices);
-            showToast('设备列表已更新', 'info');
-        });
-
-        // 镜像状态事件
-        socket.on('mirror_started', (data) => {
-            showToast(`设备 ${data.device_id} 镜像已开启`, 'success');
-            currentMirroringDevice = data.device_id;  // 设置当前镜像设备
-            showControlPanel();
-            // 确保JMuxer可用
-            if (!jmuxer) {
-                jmuxer = createJMuxer();
-            }
-        });
-
-        socket.on('mirror_stopped', (data) => {
-            showToast(`设备 ${data.device_id} 镜像已停止`, 'warning');
-            currentMirroringDevice = null;  // 清除当前镜像设备
-            hideControlPanel();
-            // 重置播放器和解析器，避免残留状态影响再次启动
-            resetPlayer();
-            if (input && typeof input.destroy === 'function') {
-                input.destroy();
-                input = null;
-            }
-            hasStartedStream = false;
-            // 清理停止镜像的超时定时器
-            if (pendingStopTimers.has(data.device_id)) {
-                clearTimeout(pendingStopTimers.get(data.device_id));
-                pendingStopTimers.delete(data.device_id);
-            }
-            // 若该设备在“停止后断开”的集合中，则继续执行断开连接
-            if (pendingDisconnectAfterStop && pendingDisconnectAfterStop.has(data.device_id)) {
-                showToast(`已停止镜像，正在断开设备 ${data.device_id}...`, 'info');
-                socket.emit('disconnect_device', { device_id: data.device_id });
-                pendingDisconnectAfterStop.delete(data.device_id);
-            }
-            parser = new VideoParser(({ type, data }) => {
-                if (type === 'nalu') {
-                    if (jmuxerReady && jmuxer) {
-                        const naluType = data[4] & 0x1f;
-                        if (awaitingKeyframe) {
-                            if (naluType === 5) {
-                                awaitingKeyframe = false;
-                                jmuxer.feed({ video: data });
-                                videoElement.play().catch(() => {});
-                            } else {
-                                return;
-                            }
-                        } else {
-                            jmuxer.feed({ video: data });
-                        }
+            socket.on('mirror_error', (error) => {
+                showToast('镜像错误: ' + error, 'danger');
+                // 若处于“停止后断开”流程，但停止失败或异常，直接继续断开
+                if (currentMirroringDevice && pendingDisconnectAfterStop.has(currentMirroringDevice)) {
+                    const deviceId = currentMirroringDevice;
+                    if (pendingStopTimers.has(deviceId)) {
+                        clearTimeout(pendingStopTimers.get(deviceId));
+                        pendingStopTimers.delete(deviceId);
                     }
-                } else if (type === 'init') {
-                    if (jmuxerReady && jmuxer) {
-                        jmuxer.feed({ video: data["sps"] });
-                        jmuxer.feed({ video: data["pps"] });
-                        videoElement.play().catch(() => {});
-                        hasStartedStream = true;
-                    } else {
-                        lastInit = data;
-                    }
-                } else if (type === 'screen_size') {
-                    const w = data["width"], h = data["height"];
-                    initInput(w, h);
-                    currentScreenWidth = w;
-                    currentScreenHeight = h;
-                    updateVideoDisplay(w, h);
-                    updateOrientationClass(w, h);
-                    updateScreenSizeLabel(w, h);
-                } else if (type === 'size_change') {
-                    const w = data["width"], h = data["height"];
-                    currentScreenWidth = w;
-                    currentScreenHeight = h;
-                    if (hasStartedStream) {
-                        resetPlayer();
-                        if (!jmuxer) {
-                            jmuxer = createJMuxer();
-                        }
-                        awaitingKeyframe = true;
-                    }
-                    if (input) {
-                        input.resizeScreen(w, h);
-                    }
-                    updateVideoDisplay(w, h);
-                    updateOrientationClass(w, h);
-                    updateScreenSizeLabel(w, h);
+                    showToast(`镜像异常，直接断开设备 ${deviceId}`, 'warning');
+                    socket.emit('disconnect_device', { device_id: deviceId });
+                    pendingDisconnectAfterStop.delete(deviceId);
                 }
             });
-        });
 
-        socket.on('mirror_error', (error) => {
-            showToast('镜像错误: ' + error, 'danger');
-            // 若处于“停止后断开”流程，但停止失败或异常，直接继续断开
-            if (currentMirroringDevice && pendingDisconnectAfterStop.has(currentMirroringDevice)) {
-                const deviceId = currentMirroringDevice;
-                if (pendingStopTimers.has(deviceId)) {
-                    clearTimeout(pendingStopTimers.get(deviceId));
-                    pendingStopTimers.delete(deviceId);
+            // 连接相关事件
+            socket.on('connection_error', (error) => {
+                showToast('连接失败: ' + error, 'danger');
+            });
+
+            // ===================== AI 聊天（前端界面与事件） =====================
+            (function initAiChat() {
+                const inputEl = document.getElementById('ai-chat-input');
+                const sendBtn = document.getElementById('ai-chat-send');
+                const stopBtn = document.getElementById('ai-chat-stop');
+                const messagesEl = document.getElementById('ai-chat-messages');
+                if (!inputEl || !sendBtn || !messagesEl) return;
+
+                let nextMessageId = 1;
+                const pendingTimers = new Map();
+                const pendingAiNodes = new Map();
+                const streamStructs = new Map(); // mid -> { container, sections: Map, current: string }
+                let currentRunningMid = null;
+
+                function appendMessage(role, text, mid = null) {
+                    const el = document.createElement('div');
+                    el.className = `chat-message ${role}`;
+                    el.textContent = text;
+                    if (mid) el.dataset.mid = String(mid);
+                    messagesEl.appendChild(el);
+                    messagesEl.scrollTop = messagesEl.scrollHeight;
+                    return el;
                 }
-                showToast(`镜像异常，直接断开设备 ${deviceId}`, 'warning');
-                socket.emit('disconnect_device', { device_id: deviceId });
-                pendingDisconnectAfterStop.delete(deviceId);
-            }
-        });
 
-        // 连接相关事件
-        socket.on('connection_error', (error) => {
-            showToast('连接失败: ' + error, 'danger');
-        });
-    </script>
+                function updatePending(mid, newText) {
+                    const key = String(mid);
+                    ensureStructuredBubble(key);
+                    const struct = streamStructs.get(key);
+                    if (!struct) return;
+                    const sec = getOrCreateSection(struct, 'final', '最终回答');
+                    sec.body.textContent = newText || '（空回复）';
+                    messagesEl.scrollTop = messagesEl.scrollHeight;
+                }
+
+                function getPendingNode(mid) {
+                    const key = String(mid);
+                    let node = pendingAiNodes.get(key);
+                    if (!node) node = messagesEl.querySelector(`.chat-message.ai[data-mid="${key}"]`);
+                    return node;
+                }
+
+                function ensureStructuredBubble(mid) {
+                    const key = String(mid);
+                    let node = getPendingNode(key);
+                    if (!node) return null;
+                    if (!node.dataset.structured) {
+                        node.dataset.structured = '1';
+                        node.style.whiteSpace = 'normal';
+                        node.innerHTML = '';
+                        const wrap = document.createElement('div');
+                        wrap.className = 'ai-stream';
+                        node.appendChild(wrap);
+                        streamStructs.set(key, { container: wrap, sections: new Map(), current: 'log' });
+                    }
+                    if (!streamStructs.has(key)) {
+                        const wrap = document.createElement('div');
+                        wrap.className = 'ai-stream';
+                        node.appendChild(wrap);
+                        streamStructs.set(key, { container: wrap, sections: new Map(), current: 'log' });
+                    }
+                    return streamStructs.get(key);
+                }
+
+                function getOrCreateSection(struct, key, title) {
+                    let sec = struct.sections.get(key);
+                    if (!sec) {
+                        const secEl = document.createElement('div');
+                        secEl.className = 'ai-section';
+                        const titleEl = document.createElement('div');
+                        titleEl.className = 'ai-sec-title';
+                        titleEl.textContent = title;
+                        const bodyEl = document.createElement('pre');
+                        bodyEl.className = 'ai-sec-body';
+                        secEl.appendChild(titleEl);
+                        secEl.appendChild(bodyEl);
+                        struct.container.appendChild(secEl);
+                        sec = { el: secEl, body: bodyEl };
+                        struct.sections.set(key, sec);
+                    }
+                    return sec;
+                }
+
+                function appendLineToSection(struct, key, title, line) {
+                    const sec = getOrCreateSection(struct, key, title);
+                    const current = sec.body.textContent || '';
+                    sec.body.textContent = current ? (current + '\n' + line) : line;
+                }
+
+                function processStream(mid, text) {
+                    if (!text) return;
+                    const key = String(mid);
+                    const struct = ensureStructuredBubble(key);
+                    if (!struct) return;
+                    const lines = String(text).split(/\r?\n/).filter(Boolean);
+                    for (const raw of lines) {
+                        const line = raw.trim();
+                        let secKey = struct.current || 'log';
+                        // 标题切换
+                        if (line.includes('### Manager')) { secKey = 'manager'; struct.current = 'manager'; appendLineToSection(struct, 'manager', 'Manager', ''); continue; }
+                        if (line.includes('### Operator')) { secKey = 'operator'; struct.current = 'operator'; appendLineToSection(struct, 'operator', 'Operator', ''); continue; }
+                        if (line.includes('### Action Reflector')) { secKey = 'reflector'; struct.current = 'reflector'; appendLineToSection(struct, 'reflector', 'Action Reflector', ''); continue; }
+                        if (line.includes('### NoteKeeper') || line.includes('### NoteKeeper') || line.includes('### NoteKeeper ...')) { secKey = 'notekeeper'; struct.current = 'notekeeper'; appendLineToSection(struct, 'notekeeper', 'NoteKeeper', ''); continue; }
+                        // 常见字段归类
+                        if (/^(Completed subgoal:|Planning thought:|Plan:)/i.test(line)) { appendLineToSection(struct, 'manager', 'Manager', line); continue; }
+                        if (/^(Thought:|Action:|Action description:)/i.test(line)) { appendLineToSection(struct, 'operator', 'Operator', line); continue; }
+                        if (/^(Action reflection )/i.test(line)) { appendLineToSection(struct, 'reflector', 'Action Reflector', line); continue; }
+                        if (/^(Important notes:)/i.test(line)) { appendLineToSection(struct, 'notekeeper', 'NoteKeeper', line); continue; }
+                        // 其他归为日志
+                        appendLineToSection(struct, 'log', '日志', line);
+                    }
+                    messagesEl.scrollTop = messagesEl.scrollHeight;
+                }
+
+                function appendPending(mid, delta) {
+                    processStream(mid, delta);
+                }
+
+                function clearPendingTimer(mid) {
+                    const t = pendingTimers.get(mid);
+                    if (t) {
+                        clearTimeout(t);
+                        pendingTimers.delete(mid);
+                    }
+                }
+
+                function sendMessage() {
+                    const text = (inputEl.value || '').trim();
+                    if (!text) return;
+                    inputEl.value = '';
+                    const mid = nextMessageId++;
+                    appendMessage('user', text, mid);
+                    const pending = appendMessage('ai', '正在思考…', mid);
+                    pendingAiNodes.set(String(mid), pending);
+
+                    // 通过 Socket.IO 发送（后端接入后可返回真实答案）
+                    try {
+                        socket.emit('ai_chat_message', { mid, text });
+                    } catch (e) {
+                        // 安静失败，走本地回退
+                    }
+
+                    // 设置运行态
+                    currentRunningMid = String(mid);
+                    if (stopBtn) stopBtn.disabled = false;
+                    sendBtn.disabled = true;
+                    inputEl.disabled = true;
+                }
+
+                sendBtn.addEventListener('click', sendMessage);
+                inputEl.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                });
+
+                if (stopBtn) {
+                    stopBtn.addEventListener('click', () => {
+                        if (!currentRunningMid) return;
+                        try {
+                            socket.emit('ai_chat_stop', { mid: currentRunningMid });
+                            stopBtn.disabled = true; // 防抖
+                        } catch (e) { }
+                    });
+                }
+
+                // 处理后端回复（可选）：预期格式 { mid, text }
+                socket.on('ai_chat_reply', (payload) => {
+                    try {
+                        const { mid, text } = payload || {};
+                        const key = String(mid);
+                        if (mid !== undefined) {
+                            clearPendingTimer(key);
+                            updatePending(key, text || '（空回复）');
+                            pendingAiNodes.delete(key);
+                            if (currentRunningMid === key) {
+                                currentRunningMid = null;
+                                if (stopBtn) stopBtn.disabled = true;
+                                sendBtn.disabled = false;
+                                inputEl.disabled = false;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('ai_chat_reply handler error:', e);
+                    }
+                });
+
+                // 处理后端流式日志：预期格式 { mid, text }
+                socket.on('ai_chat_stream', (payload) => {
+                    try {
+                        const { mid, text } = payload || {};
+                        if (mid === undefined || !text) return;
+                        appendPending(mid, String(text));
+                    } catch (e) {
+                        console.warn('ai_chat_stream handler error:', e);
+                    }
+                });
+
+                // 处理后端推送的截图：预期格式 { mid, images: [dataUrl...] }
+                socket.on('ai_chat_images', (payload) => {
+                    try {
+                        const { mid, images } = payload || {};
+                        if (mid === undefined || !images || !Array.isArray(images) || images.length === 0) return;
+                        const key = String(mid);
+                        const struct = ensureStructuredBubble(key);
+                        if (!struct) return;
+                        // 使用单独的图片区块
+                        let sec = getOrCreateSection(struct, 'images', '截图');
+                        // 将 <pre> 改为容器
+                        if (sec.body.tagName.toLowerCase() === 'pre') {
+                            const container = document.createElement('div');
+                            container.className = 'ai-sec-body images-body';
+                            sec.el.replaceChild(container, sec.body);
+                            sec.body = container;
+                        }
+                        for (const url of images) {
+                            const img = document.createElement('img');
+                            img.src = String(url);
+                            img.alt = '日志截图';
+                            img.loading = 'lazy';
+                            img.className = 'ai-image';
+                            sec.body.appendChild(img);
+                        }
+                        messagesEl.scrollTop = messagesEl.scrollHeight;
+                    } catch (e) {
+                        console.warn('ai_chat_images handler error:', e);
+                    }
+                });
+
+                socket.on('ai_chat_stopped', (payload) => {
+                    try {
+                        const { mid, ok, msg } = payload || {};
+                        const key = String(mid);
+                        ensureStructuredBubble(key);
+                        const struct = streamStructs.get(key);
+                        if (struct) {
+                            appendLineToSection(struct, 'log', '日志', `【${ok ? '已停止' : '停止失败'}】${msg || ''}`);
+                        }
+                        if (currentRunningMid === key) {
+                            currentRunningMid = null;
+                            if (stopBtn) stopBtn.disabled = true;
+                            sendBtn.disabled = false;
+                            inputEl.disabled = false;
+                        }
+                    } catch (e) {
+                        console.warn('ai_chat_stopped handler error:', e);
+                    }
+                });
+
+                // 渲染每步摘要与前后截图：{ mid, steps: [{ step_id, manager, operator, reflector, images: [{label,url}]}] }
+                socket.on('ai_chat_steps', (payload) => {
+                    try {
+                        const { mid, steps } = payload || {};
+                        if (mid === undefined || !Array.isArray(steps) || steps.length === 0) return;
+                        const key = String(mid);
+                        const struct = ensureStructuredBubble(key);
+                        if (!struct) return;
+                        let sec = getOrCreateSection(struct, 'steps', '分步记录');
+                        // 将 <pre> 改为容器
+                        if (sec.body.tagName.toLowerCase() === 'pre') {
+                            const container = document.createElement('div');
+                            container.className = 'ai-sec-body steps-body';
+                            sec.el.replaceChild(container, sec.body);
+                            sec.body = container;
+                        }
+                        for (const st of steps) {
+                            const card = document.createElement('div');
+                            card.className = 'step-card';
+                            const title = document.createElement('div');
+                            title.className = 'step-title';
+                            title.textContent = `步骤 ${st.step_id ?? ''}`.trim();
+                            card.appendChild(title);
+
+                            const meta = document.createElement('div');
+                            meta.className = 'step-meta';
+                            const mgr = st.manager || {}; const opr = st.operator || {}; const rfl = st.reflector || {};
+                            const lines = [];
+                            if (mgr.thought || mgr.plan) lines.push(`Manager: ${[mgr.thought, mgr.plan].filter(Boolean).join(' | ')}`);
+                            if (opr.thought || opr.action || opr.description) lines.push(`Operator: ${[opr.thought, opr.action, opr.description].filter(Boolean).join(' | ')}`);
+                            if (rfl.outcome || rfl.error_description) lines.push(`Reflector: ${[rfl.outcome, rfl.error_description].filter(Boolean).join(' | ')}`);
+                            meta.textContent = lines.join('\n');
+                            card.appendChild(meta);
+
+                            const grid = document.createElement('div');
+                            grid.className = 'images-grid';
+                            if (Array.isArray(st.images)) {
+                                for (const im of st.images) {
+                                    const item = document.createElement('div');
+                                    item.className = 'image-item';
+                                    const lab = document.createElement('div');
+                                    lab.className = 'image-label';
+                                    lab.textContent = im.label || '';
+                                    const img = document.createElement('img');
+                                    img.src = String(im.url || '');
+                                    img.alt = lab.textContent || '截图';
+                                    img.loading = 'lazy';
+                                    img.className = 'ai-image thumb';
+                                    img.addEventListener('click', () => openLightbox(img.src, lab.textContent));
+                                    item.appendChild(lab);
+                                    item.appendChild(img);
+                                    grid.appendChild(item);
+                                }
+                            }
+                            card.appendChild(grid);
+                            sec.body.appendChild(card);
+                        }
+                        messagesEl.scrollTop = messagesEl.scrollHeight;
+                    } catch (e) {
+                        console.warn('ai_chat_steps handler error:', e);
+                    }
+                });
+            })();
+        </script>
+        <style>
+            /* AI 分段显示样式 */
+            .ai-section {
+                background: #f4f6f8;
+                border: 1px solid #e3e6ea;
+                border-radius: 6px;
+                padding: 6px 8px;
+                margin: 6px 0;
+            }
+
+            .ai-sec-title {
+                font-weight: 600;
+                color: #0d6efd;
+                font-size: 12px;
+                margin-bottom: 4px;
+            }
+
+            .ai-sec-body {
+                margin: 0;
+                white-space: pre-wrap;
+                word-break: break-word;
+                font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+                font-size: 12px;
+                color: #222;
+            }
+
+            .images-body {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                gap: 8px;
+            }
+
+            .ai-image {
+                width: 100%;
+                height: auto;
+                border: 1px solid #e3e6ea;
+                border-radius: 6px;
+                background: #fff;
+            }
+
+            /* 分步记录样式 */
+            .steps-body { display: flex; flex-direction: column; gap: 8px; }
+            .step-card { border: 1px solid #e3e6ea; border-radius: 6px; padding: 8px; background: #fff; }
+            .step-title { font-weight: 600; color: #333; margin-bottom: 4px; }
+            .step-meta { white-space: pre-wrap; font-size: 12px; color: #555; margin-bottom: 6px; }
+            .images-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+            .image-item { display: flex; flex-direction: column; gap: 4px; }
+            .image-label { font-size: 12px; color: #0d6efd; }
+
+            /* Lightbox */
+            .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 9999; }
+            .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.5); }
+            .lightbox .lb-caption { color: #fff; margin-top: 8px; text-align: center; font-size: 14px; }
+
+            .ai-image.thumb { cursor: zoom-in; }
+        </style>
+
+        <!-- Lightbox overlay -->
+        <div id="lightbox" class="lightbox" onclick="closeLightbox(event)">
+            <div class="lb-inner">
+                <img id="lb-image" src="" alt="" />
+                <div id="lb-caption" class="lb-caption"></div>
+            </div>
+        </div>
+
+        <script>
+            function openLightbox(src, caption) {
+                try {
+                    const lb = document.getElementById('lightbox');
+                    const img = document.getElementById('lb-image');
+                    const cap = document.getElementById('lb-caption');
+                    img.src = src || '';
+                    cap.textContent = caption || '';
+                    lb.style.display = 'flex';
+                } catch (e) {}
+            }
+            function closeLightbox(e) {
+                const lb = document.getElementById('lightbox');
+                if (e.target && e.target.id === 'lightbox') {
+                    lb.style.display = 'none';
+                    const img = document.getElementById('lb-image');
+                    img.src = '';
+                    document.getElementById('lb-caption').textContent = '';
+                }
+            }
+        </script>
 </body>
 
 </html>
