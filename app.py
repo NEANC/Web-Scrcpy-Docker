@@ -50,13 +50,18 @@ def handle_connect():
         print(f'connectioned, client  {scpy_ctx}')
 
 @socketio.on('disconnect')
-def handle_disconnect():
+def handle_disconnect(reason=None):
+    """Cleanup scrcpy session when client disconnects."""
     global scpy_ctx, client_sid
+    print(f'Client disconnected: {reason}, ctx={scpy_ctx}')
     client_sid = None
-    print('Client disconnected', {scpy_ctx})
-    scpy_ctx.scrcpy_stop()
-    scpy_ctx = None
-    print('scrcpy stopped, client {scpy_ctx}')
+    if scpy_ctx is not None:
+        try:
+            scpy_ctx.scrcpy_stop()
+        except Exception as e:
+            print(f'scrcpy_stop failed: {e}')
+        scpy_ctx = None
+    print('scrcpy cleanup done')
 
 @socketio.on('control_data')
 def handle_control_data(data):
@@ -66,6 +71,7 @@ def handle_control_data(data):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Web server for scrcpy')
     parser.add_argument('--video_bit_rate', default="1024000", help='scrcpy video bit rate')
+    parser.add_argument('--port', type=int, default=5000, help='port to bind the web server to')
     args = parser.parse_args()
     video_bit_rate = args.video_bit_rate
-    socketio.run(app, host='0.0.0.0', port=5000)
+    socketio.run(app, host='0.0.0.0', port=args.port)

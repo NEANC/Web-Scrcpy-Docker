@@ -14,6 +14,10 @@ class VideoParser {
     }
 
     appendData(data) {
+        // Guard against empty or null payloads to avoid slice/read errors.
+        if (!data || data.length === 0) {
+            return;
+        }
         const newBuffer = new Uint8Array(this.buffer.length + data.length);
         newBuffer.set(this.buffer, 0);
         newBuffer.set(data, this.buffer.length);
@@ -82,6 +86,11 @@ class VideoParser {
     }
 
     processBuffer(nalu) {
+        // Need at least NALU header (0 0 0 1 XX)
+        if (!nalu || nalu.length < 5) {
+            if (this.debug) console.warn('skip short nalu', nalu && nalu.length);
+            return;
+        }
         const nalu_type = nalu[4] & 0x1f;
         if (nalu_type === 1) {
             if (this.debug)
@@ -100,6 +109,11 @@ class VideoParser {
                 this.sps = nalu
                 if (this.debug)
                     console.log("sps", nalu.length)
+            }
+            // Guard against malformed SPS
+            if (!this.sps || this.sps.length < 5) {
+                if (this.debug) console.warn('skip malformed sps', this.sps && this.sps.length);
+                return;
             }
             let ret = SPSParser.parseSPS(this.sps.slice(4));
             if (this.onNaluCallback) {
@@ -121,6 +135,10 @@ class VideoParser {
                 if (this.debug)
                     console.log("pps", nalu.length)
             }
+            if (!this.pps || this.pps.length === 0) {
+                if (this.debug) console.warn('skip malformed pps');
+                return;
+            }
             return;
         } else {
             console.log("unknow frame type", nalu[0], nalu[1], nalu[2], nalu[3], nalu_type)
@@ -130,7 +148,7 @@ class VideoParser {
             if (this.onNaluCallback) {
                 this.onNaluCallback({
                     type: 'init',
-                    data: { "width:": this.width, " height:": this.height, "pps": this.pps, "sps": this.sps }
+                    data: { "width": this.width, "height": this.height, "pps": this.pps, "sps": this.sps }
                 });
             }
             this.pps = null;

@@ -123,18 +123,31 @@ class Scrcpy:
     def scrcpy_stop(self):
         print("Stopping Scrcpy")
         self.stop = True
-        self.video_socket.shutdown(socket.SHUT_RDWR)
-        self.control_socket.shutdown(socket.SHUT_RDWR)
-        self.video_socket.shutdown(socket.SHUT_RDWR)
-        self.audio_socket.close()
-        self.control_socket.close()
-        self.video_socket.close()
+        # Close sockets defensively; they may already be closed if the client dropped
+        sockets = [self.video_socket, self.audio_socket, self.control_socket]
+        for sock in sockets:
+            if sock:
+                try:
+                    sock.shutdown(socket.SHUT_RDWR)
+                except Exception:
+                    pass
+                try:
+                    sock.close()
+                except Exception:
+                    pass
 
-        self.video_thread.join()
-        self.audio_thread.join()
-        self.control_thread.join()
-        self.android_process.terminate()
-        self.android_thread.join()
+        # Wait for threads to exit, but don't block forever
+        for thread in [self.video_thread, self.audio_thread, self.control_thread]:
+            if thread:
+                thread.join(timeout=0.5)
+
+        if self.android_process:
+            try:
+                self.android_process.terminate()
+            except Exception:
+                pass
+        if self.android_thread:
+            self.android_thread.join(timeout=0.5)
         print("Scrcpy stopped")
 
     def scrcpy_send_control(self, data):
