@@ -3,6 +3,8 @@ from flask_socketio import SocketIO, emit, send
 from scrcpy import Scrcpy
 import argparse
 import queue
+# Force inclusion of simple_websocket for threading async_mode in bundled binary
+import simple_websocket  # noqa: F401
 
 scpy_ctx = None
 client_sid = None
@@ -11,7 +13,8 @@ video_bit_rate = "1024000"
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, async_mode=None)
+# In a bundled binary we likely don't have eventlet/gevent installed; force threading.
+socketio = SocketIO(app, async_mode="threading")
 
 @app.route('/')
 def index():
