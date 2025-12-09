@@ -29,6 +29,9 @@ DEFAULT_COLLECT_SUBMODS = [
     "engineio",
     "flask_socketio",
 ]
+DEFAULT_DATAS = [
+    ("scrcpy-server", "scrcpy-server"),  # scrcpy server jar/binary
+]
 
 def run(cmd, env=None):
     print(f"[cmd] {' '.join(cmd)}")
@@ -96,6 +99,10 @@ def build(python_bin: Path, entry: Path, name: str, extra_args: list[str]):
         cmd += ["--collect-all", pkg]
     for pkg in DEFAULT_COLLECT_SUBMODS:
         cmd += ["--collect-submodules", pkg]
+    # bundle scrcpy-server if present
+    for src, dst in DEFAULT_DATAS:
+        if (Path(src)).exists():
+            cmd += ["--add-data", f"{src}:{dst}"]
     cmd += extra_args
     cmd.append(str(entry))
     run(cmd)
