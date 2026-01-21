@@ -1,0 +1,184 @@
+name: 自动构建 Docker 镜像
+
+on:
+  push:
+    branches: [ dev ]
+    tags:
+      - 'v*'  # 版本号标记
+  pull_request:
+    branches: [ dev ]
+  workflow_dispatch:
+
+# 权限配置：仅授予GHCR推送必需的最小权限
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-24.04
+    env:
+      # 镜像名称
+      IMAGE_NAME: web-scrcpy
+
+    steps:
+      # 检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 登录GHCR（仅推送到GHCR，无需DockerHub）
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Define Repo Owner Lower
+        run: |
+          # 初始化所有者姓名
+          # 把github.repository_owner转为纯小写，避免大写导致的镜像名称错误
+          REPO_OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "REPO_OWNER_LOWER=${REPO_OWNER_LOWER}" >> $GITHUB_ENV
+      
+      - name: Generate Version
+        run: |
+          # 生成版本号
+          # 如果是标签推送，使用标签名
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION=${{ github.ref_name }}
+          # 如果是分支推送，使用分支名-短哈希
+          else
+            BRANCH=${{ github.ref_name }}
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            VERSION="${BRANCH}-${SHORT_SHA}"
+          fi
+          
+          echo "Generated version: $VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+      
+      - name: Check if the Image Exists
+        run: |
+          # 检查镜像是否存在，精简版
+          IMAGE_URL="ghcr.io/${{ env.REPO_OWNER_LOWER }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}"
+          
+          # 使用 skopeo 检查镜像是否存在（静默模式，仅判断退出码）
+          if skopeo inspect --creds "user:${{ secrets.GITHUB_TOKEN }}" "docker://${IMAGE_URL}" >/dev/null 2>&1; then
+            IMAGE_EXISTS="true"
+          else
+            IMAGE_EXISTS="false"
+          fi
+          
+          echo "Image tag exists: $IMAGE_EXISTS"
+          echo "IMAGE_EXISTS=$IMAGE_EXISTS" >> "$GITHUB_ENV"
+      
+      # 如果镜像存在，停止CI运行
+      - name: Stop if image exists
+        if: env.IMAGE_EXISTS == 'true'
+        run: |
+          echo "❌ 镜像 ${{ env.IMAGE_NAME }}:${{ env.VERSION }} 已存在，终止构建"
+          # 使用非零退出码终止CI
+          exit 1
+
+      - name: Generate Tag
+        run: |
+          # 生成标签
+          # 检查事件类型并生成相应的标签
+          if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.action }}" = "closed" ] && [ "${{ github.event.pull_request.merged }}" = "true" ]; then
+            # 对于合并的PR事件，使用版本号+PR编号
+            PR_NUMBER=${{ github.event.pull_request.number }}
+            FINAL_TAG="${{ env.VERSION }}-pr$PR_NUMBER"
+          else
+            # 默认情况（如手动触发、定时任务等），使用生成的版本号
+            FINAL_TAG="${{ env.VERSION }}"
+          fi
+          
+          echo "Generated tag: $FINAL_TAG"
+          echo "FINAL_TAG=$FINAL_TAG" >> $GITHUB_ENV
+
+      - name: Build Docker Image
+        run: |
+          # 构建镜像（临时标签web-scrcpy:latest）
+          docker build . \
+            -t web-scrcpy:latest
+
+      - name: Tag Image
+        run: |
+          # 设置镜像标签
+          docker tag web-scrcpy:latest ghcr.io/${{ env.REPO_OWNER_LOWER }}/${{ env.IMAGE_NAME }}:${{ env.FINAL_TAG }}
+          
+          # 非PR事件推送latest标签
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            docker tag web-scrcpy:latest ghcr.io/${{ env.REPO_OWNER_LOWER }}/${{ env.IMAGE_NAME }}:latest
+          fi
+          
+          # 输出镜像信息
+          docker images | grep ${{ env.REPO_OWNER_LOWER }}/${{ env.IMAGE_NAME }}
+
+      - name: Push Image
+        run: |
+          # 推送镜像
+          docker push ghcr.io/${{ env.REPO_OWNER_LOWER }}/${{ env.IMAGE_NAME }}:${{ env.FINAL_TAG }}
+          
+          # 非PR事件推送latest标签
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            docker push ghcr.io/${{ env.REPO_OWNER_LOWER }}/${{ env.IMAGE_NAME }}:latest
+          fi
+
+      # 登出GHCR
+      - name: Logout from GHCR
+        if: always()  # 无论前面步骤是否失败，都执行登出
+        run: docker logout ghcr.io
+
+      - name: Build Summary
+        if: always()  # 无论前面步骤是否失败，都输出摘要
+        run: |
+          # 添加GitHub Actions UI作业摘要
+          echo "## Docker镜像构建结果" >> $GITHUB_STEP_SUMMARY
+          
+          # 构建状态
+          if [ "${{ env.IMAGE_EXISTS }}" = "true" ]; then
+            echo "❌ **构建状态**: 已终止" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **终止原因**: 镜像已存在" >> $GITHUB_STEP_SUMMARY
+            echo "- 镜像地址: ghcr.io/${{ env.REPO_OWNER_LOWER }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ job.status }}" = "success" ]; then
+            echo "✅ **构建状态**: 成功" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **构建状态**: 失败" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # 容器信息
+          echo "### 🐳 容器信息" >> $GITHUB_STEP_SUMMARY
+          echo "- **仓库**: ghcr.io" >> $GITHUB_STEP_SUMMARY
+          echo "- **镜像名称**: ${{ env.REPO_OWNER_LOWER }}/${{ env.IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **标签**: ${{ env.FINAL_TAG }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "- **最新标签**: latest" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "- **完整镜像路径**: ghcr.io/${{ env.REPO_OWNER_LOWER }}/${{ env.IMAGE_NAME }}:${{ env.FINAL_TAG }}" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # 推送状态
+          echo "### 📤 推送状态" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" = "success" ] && [ "${{ env.IMAGE_EXISTS }}" != "true" ]; then
+            echo "✅ 镜像已成功推送到GHCR" >> $GITHUB_STEP_SUMMARY
+            echo "- 版本标签: ghcr.io/${{ env.REPO_OWNER_LOWER }}/${{ env.IMAGE_NAME }}:${{ env.FINAL_TAG }}" >> $GITHUB_STEP_SUMMARY
+            if [ "${{ github.event_name }}" != "pull_request" ]; then
+              echo "- 最新标签: ghcr.io/${{ env.REPO_OWNER_LOWER }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "❌ 镜像推送失败或被跳过" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # 构建详情
+          echo "### 🔧 构建详情" >> $GITHUB_STEP_SUMMARY
+          echo "- **构建ID**: ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **触发方式**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **分支**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **构建时间**: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "- **工作流运行**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,33 @@
+# 排除版本控制文件
+.git
+.gitignore
+
+# 排除构建产物
+dist/
+
+# 排除测试文件和文档
+*.md
+LICENSE.txt
+
+# 排除 IDE 相关文件
+.vscode/
+.idea/
+
+# 排除不同平台的 ADB 工具（只保留 linux 版本）
+adb/darwin/
+adb/windows/
+
+# 排除虚拟环境
+venv/
+env/
+
+# 排除临时文件
+*.tmp
+*.temp
+
+# 排除缓存
+__pycache__/
+*.pyc
+
+# 排除 .env 文件（可以在构建时通过环境变量传入）
+.env
