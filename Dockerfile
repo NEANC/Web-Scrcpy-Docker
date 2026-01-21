@@ -39,7 +39,7 @@ RUN python3 -m venv /app/venv && \
     . /app/venv/bin/activate && \
     pip3 install --no-cache-dir --upgrade pip && \
     pip3 install --no-cache-dir --verbose -r requirements.txt && \
-    pip3 install --no-cache-dir gunicorn gevent-websocket
+    pip3 install --no-cache-dir gunicorn gevent-websocket gevent
 
 # 创建 data 目录
 RUN mkdir -p /app/data

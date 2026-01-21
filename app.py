@@ -147,8 +147,10 @@ atexit.register(cleanup_on_exit)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-# 显式使用线程模式，避免不必要的依赖探测带来的启动开销
-socketio = SocketIO(app, async_mode='threading')
+# 显式使用线程模式，避免不必要的依赖探测带来的启动开销，测试环境使用
+# socketio = SocketIO(app, async_mode='threading')
+# 在生成环境中使用 gevent 模式以匹配 Gunicorn 的 geventwebsocket worker
+socketio = SocketIO(app, async_mode='gevent')
 
 @app.route('/')
 def index():
