@@ -1011,7 +1011,10 @@
                     <div class="list-group-item">
                         <div class="d-flex w-100 justify-content-between align-items-center">
                             <span class="fw-semibold">${device}</span>
-                            <button class="connect-saved-device-btn btn btn-primary btn-sm" data-ip="${ip}" data-port="${port}">快速连接</button>
+                            <div class="btn-group" role="group">
+                                <button class="connect-saved-device-btn btn btn-primary btn-sm" data-ip="${ip}" data-port="${port}">快速连接</button>
+                                <button class="delete-saved-device-btn btn btn-danger btn-sm" data-device="${device}">删除</button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1026,6 +1029,16 @@
                         devicePortInput.value = port;
                         // 触发连接按钮的点击事件
                         document.getElementById('connect-btn').click();
+                    });
+                });
+
+                // 添加删除按钮事件监听
+                savedDevicesContainer.querySelectorAll('.delete-saved-device-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const device = btn.getAttribute('data-device');
+                        if (confirm(`确定要删除保存的设备 ${device} 吗？`)) {
+                            socket.emit('delete_saved_device', { device_id: device });
+                        }
                     });
                 });
             }

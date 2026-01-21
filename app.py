@@ -16,15 +16,6 @@ from dotenv import load_dotenv, dotenv_values
 load_dotenv()
 
 # 读取和写入 .env 文件中的 ADB 地址
-def get_saved_adb_address():
-    """
-    从 .env 文件中读取保存的 ADB 地址
-    """
-    config = dotenv_values()
-    ip = config.get('ADB_DEVICE_IP', '')
-    port = config.get('ADB_DEVICE_PORT', '5555')
-    return ip, port
-
 def get_saved_devices():
     """
     从 .env 文件中读取保存的所有设备 ADB 地址
@@ -215,6 +206,27 @@ def handle_device_disconnect(data):
             save_devices(saved_devices)
         emit('device_list_update', device_manager.get_device_list())
         print(f'Device disconnected: {device_id}')
+
+@socketio.on('delete_saved_device')
+def handle_delete_saved_device(data):
+    """
+    处理删除保存设备的请求
+    """
+    device_id = data.get('device_id')
+    try:
+        # 从保存的设备列表中移除该设备
+        saved_devices = get_saved_devices()
+        if device_id in saved_devices:
+            saved_devices.remove(device_id)
+            save_devices(saved_devices)
+            # 发送更新后的设备列表
+            emit('saved_devices', saved_devices)
+            print(f'Saved device deleted: {device_id}')
+        else:
+            emit('error', {'message': '设备未找到'})
+    except Exception as e:
+        emit('error', {'message': f'删除设备失败: {str(e)}'})
+        print(f'Error deleting saved device: {e}')
 
 @socketio.on('start_mirror')
 def handle_start_mirror(data):
