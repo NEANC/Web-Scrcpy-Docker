@@ -12,18 +12,24 @@ from pathlib import Path
 import re
 from dotenv import load_dotenv, dotenv_values
 
+# 确保 data 目录存在
+os.makedirs('data', exist_ok=True)
+
+# 定义 .env 文件路径
+ENV_FILE_PATH = os.path.join('data', '.env')
+
 # 加载 .env 文件
-load_dotenv()
+load_dotenv(ENV_FILE_PATH)
 
 import json
 
 # 读取和写入 .env 文件中的 ADB 地址
 def get_saved_devices():
     """
-    从 .env 文件中读取保存的所有设备 ADB 地址
+    从 data/.env 文件中读取保存的所有设备 ADB 地址
     支持旧格式（逗号分隔）和新格式（JSON）
     """
-    config = dotenv_values()
+    config = dotenv_values(ENV_FILE_PATH)
     devices_str = config.get('ADB_DEVICES', '')
     if not devices_str:
         return []
@@ -41,16 +47,16 @@ def get_saved_devices():
 
 def save_devices(devices):
     """
-    将所有已连接的设备 ADB 地址保存到 .env 文件中
+    将所有已连接的设备 ADB 地址保存到 data/.env 文件中
     使用 JSON 格式存储设备名称和地址的映射关系
     """
-    config = dotenv_values()
+    config = dotenv_values(ENV_FILE_PATH)
     
     # 转换为字典格式：{"设备名称": "ADB地址"}
     devices_dict = {device['name']: device['address'] for device in devices}
     config['ADB_DEVICES'] = json.dumps(devices_dict)
     
-    with open('.env', 'w') as f:
+    with open(ENV_FILE_PATH, 'w') as f:
         for key, value in config.items():
             f.write(f'{key}={value}\n')
 

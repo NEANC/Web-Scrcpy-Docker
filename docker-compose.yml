@@ -1,0 +1,13 @@
+services:
+  web-scrcpy:
+    image: ghcr.io/neanc/web-scrcpy:latest
+    ports:
+      - "5000:5000"
+    volumes:
+      # - /dev/bus/usb:/dev/bus/usb   # 挂载 USB 设备，若需要 USB 链接请取消注释
+      - ./data:/app/data
+    privileged: true
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=production
+      - FLASK_APP=app.py
