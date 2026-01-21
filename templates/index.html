@@ -477,13 +477,12 @@
         
 
 
-            <!-- 控制按钮（移除电源/音量，新增 AI 按钮） -->
+            <!-- 控制按钮（移除电源/音量） -->
             <div class="icon-container btn-toolbar justify-content-center gap-2 p-2" style="display: none;">
                 <div class="btn-group btn-group-sm" role="group">
                     <button id="back-btn" class="btn btn-outline-light" title="返回"><i class="bi bi-arrow-left"></i></button>
                     <button id="home-btn" class="btn btn-outline-light" title="主页"><i class="bi bi-house"></i></button>
                     <button id="menu-btn" class="btn btn-outline-light" title="菜单"><i class="bi bi-list"></i></button>
-                    <button id="ai-btn" class="btn btn-outline-light" title="AI 聊天"><i class="bi bi-robot"></i></button>
                 </div>
             </div>
         </div>
@@ -726,16 +725,10 @@
                 videoElement.focus();
 
                 if (!controlsBound) {
-                    const aiBtn = document.getElementById('ai-btn');
                     const backBtn = document.getElementById('back-btn');
                     const homeBtn = document.getElementById('home-btn');
                     const menuBtn = document.getElementById('menu-btn');
 
-                    if (aiBtn) {
-                        aiBtn.addEventListener('click', () => {
-                            toggleAiDrawer();
-                        });
-                    }
                     backBtn.addEventListener('mousedown', (event) => {
                         input.snedKeyCode(event, 0, 4);
                     });
@@ -985,7 +978,6 @@
 
             function hideControlPanel() {
                 iconContainer.style.display = 'none';
-                try { closeAiDrawer(); } catch (e) {}
             }
 
             // 防止未定义导致报错

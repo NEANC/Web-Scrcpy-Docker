@@ -4,7 +4,6 @@ import base64
 import numpy as np
 from PIL import Image
 from io import BytesIO
-from openai import OpenAI
 from typing import Any, Optional
 from qwen_vl_utils import smart_resize
 
@@ -77,11 +76,8 @@ class GUIOwlWrapper(LlmWrapper, MultimodalLlmWrapper):
         self.max_retry = min(max_retry, 10)
         self.temperature = temperature
         self.model = model_name
-        self.bot = OpenAI(
-            api_key=api_key,
-            base_url=base_url,
-            timeout=30
-        )
+        # 移除 OpenAI 客户端初始化
+        print('OpenAI API is not available. AI functionality will be disabled.')
 
     def convert_messages_format_to_openaiurl(self, messages):
       converted_messages = []
@@ -105,36 +101,6 @@ class GUIOwlWrapper(LlmWrapper, MultimodalLlmWrapper):
     def predict_mm(
             self, text_prompt: str, images: list[np.ndarray], messages = None
     ) -> tuple[str, Optional[bool], Any]:
-        
-        if messages is None:
-          payload = [
-              {
-                  "role": "user",
-                  "content": [
-                      {"text": text_prompt},
-                  ]
-              }
-          ]
-          
-          for image in images:
-            payload[0]['content'].append({
-                'image': image
-            })
-        else:
-          payload = messages
-            
-        payload = self.convert_messages_format_to_openaiurl(payload)
-
-        counter = self.max_retry
-        wait_seconds = self.RETRY_WAITING_SECONDS
-        while counter > 0:
-            try:
-              chat_completion_from_url = self.bot.chat.completions.create(model=self.model, messages=payload, **{})
-              return (chat_completion_from_url.choices[0].message.content, payload, chat_completion_from_url)
-            except Exception as e:
-                time.sleep(wait_seconds)
-                wait_seconds *= 1
-                counter -= 1
-                print('Error calling LLM, will retry soon...')
-                print(e)
+        # 返回默认错误信息，因为 OpenAI API 已被移除
+        print('OpenAI API is not available. Cannot process AI requests.')
         return ERROR_CALLING_LLM, None, None
