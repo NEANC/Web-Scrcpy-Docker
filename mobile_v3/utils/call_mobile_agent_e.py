@@ -76,8 +76,6 @@ class GUIOwlWrapper(LlmWrapper, MultimodalLlmWrapper):
         self.max_retry = min(max_retry, 10)
         self.temperature = temperature
         self.model = model_name
-        # 移除 OpenAI 客户端初始化
-        print('OpenAI API is not available. AI functionality will be disabled.')
 
     def convert_messages_format_to_openaiurl(self, messages):
       converted_messages = []
@@ -101,6 +99,4 @@ class GUIOwlWrapper(LlmWrapper, MultimodalLlmWrapper):
     def predict_mm(
             self, text_prompt: str, images: list[np.ndarray], messages = None
     ) -> tuple[str, Optional[bool], Any]:
-        # 返回默认错误信息，因为 OpenAI API 已被移除
-        print('OpenAI API is not available. Cannot process AI requests.')
         return ERROR_CALLING_LLM, None, None
