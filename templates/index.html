@@ -26,10 +26,9 @@
             overflow-y: auto;
             transition: width 0.25s ease;
         }
-        /* 布局顺序：左侧边栏 -> 主内容 -> 右侧 AI 边栏 */
+        /* 布局顺序：左侧边栏 -> 主内容 */
         .sidebar { order: 1; }
         .main-content { order: 2; }
-        .rightbar { order: 3; }
 
         .sidebar-header {
             padding: 20px;
@@ -49,104 +48,6 @@
         .sidebar-content {
             flex: 1;
             padding: 20px;
-        }
-
-        /* 右侧 AI 边栏样式 */
-        .rightbar {
-            width: 360px;
-            background: #ffffff;
-            border-left: 1px solid #ddd;
-            display: flex;
-            flex-direction: column;
-            transition: width 0.25s ease, transform 0.25s ease;
-        }
-        .rightbar-header {
-            padding: 12px 16px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #ddd;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .rightbar-content {
-            padding: 12px 16px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        body.rightbar-collapsed .rightbar {
-            width: 0;
-            border: none;
-            padding: 0;
-            overflow: hidden;
-        }
-        /* 移动端作为抽屉式覆盖 */
-        @media (max-width: 768px) {
-            .rightbar {
-                position: fixed;
-                top: 0;
-                right: 0;
-                height: 100vh;
-                max-width: 420px;
-                width: 86vw;
-                transform: translateX(100%);
-                z-index: 1000;
-                box-shadow: -2px 0 12px rgba(0, 0, 0, 0.2);
-            }
-            body:not(.rightbar-collapsed) .rightbar {
-                transform: translateX(0);
-            }
-        }
-        .ai-chat { position: relative; }
-        .ai-chat.hidden { display: none; }
-
-        .ai-chat-section {
-            margin-top: 20px;
-        }
-
-        .chat-container {
-            border: 1px solid #e5e5e5;
-            border-radius: 8px;
-            background: #fafafa;
-            height: 260px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px;
-        }
-
-        .chat-message {
-            max-width: 85%;
-            padding: 8px 10px;
-            border-radius: 10px;
-            margin-bottom: 8px;
-            word-break: break-word;
-            white-space: pre-wrap;
-            font-size: 14px;
-        }
-
-        .chat-message.user {
-            margin-left: auto;
-            background: #0d6efd;
-            color: #fff;
-            border-bottom-right-radius: 2px;
-        }
-
-        .chat-message.ai {
-            margin-right: auto;
-            background: #e9ecef;
-            color: #222;
-            border-bottom-left-radius: 2px;
-        }
-
-        .chat-input-row {
-            margin-top: 8px;
         }
 
         .main-content {
@@ -441,32 +342,6 @@
             </div>
         </div>
     </div>
-    <!-- 右侧 AI 边栏 -->
-    <div class="rightbar">
-        <div class="rightbar-header">
-            <h3 class="m-0 d-flex align-items-center gap-2">
-                <i class="bi bi-robot"></i>
-                <span>AI 聊天</span>
-            </h3>
-            <button id="rightbar-close" class="btn btn-sm btn-outline-secondary" title="收起 AI 边栏">
-                <i class="bi bi-chevron-right"></i>
-            </button>
-        </div>
-        <div class="rightbar-content">
-            <div class="card ai-chat">
-                <div class="card-body">
-                    <div id="ai-chat-container" class="chat-container">
-                        <div id="ai-chat-messages" class="chat-messages" aria-live="polite"></div>
-                    </div>
-                    <div class="input-group chat-input-row mt-2">
-                        <input id="ai-chat-input" type="text" class="form-control" placeholder="输入消息，按 Enter 发送">
-                        <button id="ai-chat-send" class="btn btn-primary">发送</button>
-                        <button id="ai-chat-stop" class="btn btn-outline-danger" disabled>停止</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
     <!-- 右侧主内容区域 -->
     <div class="main-content">
         <div class="video-wrapper">
@@ -482,7 +357,6 @@
         <!-- 兼容旧逻辑的隐藏状态元素，防止第三方代码或旧事件访问为空 -->
         <p id="status" class="visually-hidden"></p>
 
-        
 
 
             <!-- 控制按钮（移除电源/音量） -->
@@ -589,15 +463,6 @@
                     applySidebarState(isMobile ? true : false);
                 }
             })();
-            // 初始化右侧 AI 边栏状态（默认收起）
-            (function initRightbarState() {
-                try {
-                    const saved = localStorage.getItem('rightbarCollapsed');
-                    applyRightbarState(saved !== '0');
-                } catch (e) {
-                    applyRightbarState(true);
-                }
-            })();
             // 事件绑定
             if (sidebarCollapseBtn) {
                 sidebarCollapseBtn.addEventListener('click', () => collapseSidebar());
@@ -669,9 +534,9 @@
                     el.setAttribute('aria-live', 'assertive');
                     el.setAttribute('aria-atomic', 'true');
                     el.innerHTML = `
-                    <div class=\"d-flex\">
-                        <div class=\"toast-body\">${message}</div>
-                        <button type=\"button\" class=\"btn-close btn-close-white me-2 m-auto\" data-bs-dismiss=\"toast\" aria-label=\"Close\"></button>
+                    <div class="d-flex">
+                        <div class="toast-body">${message}</div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                     </div>`;
                     container.appendChild(el);
                     const toast = new bootstrap.Toast(el, { delay: 3000 });
@@ -709,6 +574,10 @@
                         videoElement.pause();
                         videoElement.removeAttribute('src');
                         videoElement.load();
+                        // 额外步骤：确保视频元素不再显示最后一帧
+                        videoElement.currentTime = 0;
+                        // 设置视频元素的poster为透明，清除显示的帧
+                        videoElement.poster = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
                     }
                 } catch (e) {
                     console.warn('Video element reset error:', e);
@@ -869,29 +738,6 @@
             const deviceIpInput = document.getElementById('device-ip');
             const devicePortInput = document.getElementById('device-port');
             const iconContainer = document.querySelector('.icon-container');
-            // 右侧 AI 边栏控制
-            function applyRightbarState(collapsed) {
-                document.body.classList.toggle('rightbar-collapsed', collapsed);
-                try { localStorage.setItem('rightbarCollapsed', collapsed ? '1' : '0'); } catch (e) {}
-            }
-            function collapseRightbar() { applyRightbarState(true); }
-            function expandRightbar() { applyRightbarState(false); }
-            function toggleRightbar() {
-                const collapsed = document.body.classList.contains('rightbar-collapsed');
-                applyRightbarState(!collapsed);
-            }
-            // 兼容旧命名（此前用于底部抽屉）
-            function openAiDrawer() { expandRightbar(); }
-            function closeAiDrawer() { collapseRightbar(); }
-            function toggleAiDrawer() { toggleRightbar(); }
-
-            // 右侧边栏关闭按钮
-            (function bindRightbarClose() {
-                const rbClose = document.getElementById('rightbar-close');
-                if (rbClose) {
-                    rbClose.addEventListener('click', () => collapseRightbar());
-                }
-            })();
             const deviceListContent = document.getElementById('device-list-content');
 
             // 规范化与校验地址（支持IPv4与主机名）
@@ -899,7 +745,7 @@
                 let host = (input || '').trim();
                 // 替换常见全角或符号为英文点
                 host = host.replace(/[，、。；；\s]+/g, '.');
-                host = host.replace(/\.+/g, '.'); // 合并多余点
+                host = host.replace(/\.+\s*/g, '.'); // 合并多余点
                 // 去除结尾的点
                 host = host.replace(/\.$/, '');
                 // 若为IPv4格式，去除每段的前导零
@@ -1116,7 +962,6 @@
                 showToast(`设备 ${data.device_id} 镜像已开启`, 'success');
                 currentMirroringDevice = data.device_id;  // 设置当前镜像设备
                 showControlPanel();
-                closeAiDrawer(); // 镜像开始默认隐藏抽屉
                 // 确保JMuxer可用
                 if (!jmuxer) {
                     jmuxer = createJMuxer();
@@ -1127,7 +972,6 @@
                 showToast(`设备 ${data.device_id} 镜像已停止`, 'warning');
                 currentMirroringDevice = null;  // 清除当前镜像设备
                 hideControlPanel();
-                closeAiDrawer(); // 停止时隐藏抽屉
                 // 重置播放器和解析器，避免残留状态影响再次启动
                 resetPlayer();
                 if (input && typeof input.destroy === 'function') {
@@ -1140,7 +984,7 @@
                     clearTimeout(pendingStopTimers.get(data.device_id));
                     pendingStopTimers.delete(data.device_id);
                 }
-                // 若该设备在“停止后断开”的集合中，则继续执行断开连接
+                // 若该设备在"停止后断开"的集合中，则继续执行断开连接
                 if (pendingDisconnectAfterStop && pendingDisconnectAfterStop.has(data.device_id)) {
                     showToast(`已停止镜像，正在断开设备 ${data.device_id}...`, 'info');
                     socket.emit('disconnect_device', { device_id: data.device_id });
@@ -1202,422 +1046,55 @@
 
             socket.on('mirror_error', (error) => {
                 showToast('镜像错误: ' + error, 'danger');
-                // 若处于“停止后断开”流程，但停止失败或异常，直接继续断开
-                if (currentMirroringDevice && pendingDisconnectAfterStop.has(currentMirroringDevice)) {
+                // 若处于"停止后断开"流程，但停止失败或异常，直接继续断开
+                if (currentMirroringDevice && pendingDisconnectAfterStop && pendingDisconnectAfterStop.has(currentMirroringDevice)) {
                     const deviceId = currentMirroringDevice;
-                    if (pendingStopTimers.has(deviceId)) {
-                        clearTimeout(pendingStopTimers.get(deviceId));
-                        pendingStopTimers.delete(deviceId);
-                    }
-                    showToast(`镜像异常，直接断开设备 ${deviceId}`, 'warning');
+                    showToast(`镜像异常，正在断开设备 ${deviceId}...`, 'info');
                     socket.emit('disconnect_device', { device_id: deviceId });
                     pendingDisconnectAfterStop.delete(deviceId);
                 }
+                currentMirroringDevice = null;
+                hideControlPanel();
+                resetPlayer();
             });
 
-            // 连接相关事件
-            socket.on('connection_error', (error) => {
-                showToast('连接失败: ' + error, 'danger');
+            // 设备连接事件
+            socket.on('device_connected', (data) => {
+                showToast(`设备 ${data.device_id} 已连接`, 'success');
             });
 
-            // ===================== AI 聊天（前端界面与事件） =====================
-            (function initAiChat() {
-                const inputEl = document.getElementById('ai-chat-input');
-                const sendBtn = document.getElementById('ai-chat-send');
-                const stopBtn = document.getElementById('ai-chat-stop');
-                const messagesEl = document.getElementById('ai-chat-messages');
-                if (!inputEl || !sendBtn || !messagesEl) return;
-
-                let nextMessageId = 1;
-                const pendingTimers = new Map();
-                const pendingAiNodes = new Map();
-                const streamStructs = new Map(); // mid -> { container, sections: Map, current: string }
-                let currentRunningMid = null;
-
-                function appendMessage(role, text, mid = null) {
-                    const el = document.createElement('div');
-                    el.className = `chat-message ${role}`;
-                    el.textContent = text;
-                    if (mid) el.dataset.mid = String(mid);
-                    messagesEl.appendChild(el);
-                    messagesEl.scrollTop = messagesEl.scrollHeight;
-                    return el;
+            socket.on('device_disconnected', (data) => {
+                showToast(`设备 ${data.device_id} 已断开连接`, 'info');
+                if (currentMirroringDevice === data.device_id) {
+                    currentMirroringDevice = null;
+                    hideControlPanel();
+                    resetPlayer();
                 }
+            });
 
-                function updatePending(mid, newText) {
-                    const key = String(mid);
-                    ensureStructuredBubble(key);
-                    const struct = streamStructs.get(key);
-                    if (!struct) return;
-                    const sec = getOrCreateSection(struct, 'final', '最终回答');
-                    sec.body.textContent = newText || '（空回复）';
-                    messagesEl.scrollTop = messagesEl.scrollHeight;
-                }
+            socket.on('device_connect_error', (error) => {
+                showToast('设备连接错误: ' + error, 'danger');
+            });
 
-                function getPendingNode(mid) {
-                    const key = String(mid);
-                    let node = pendingAiNodes.get(key);
-                    if (!node) node = messagesEl.querySelector(`.chat-message.ai[data-mid="${key}"]`);
-                    return node;
-                }
+            socket.on('device_renamed', (data) => {
+                showToast(`设备 ${data.device_id} 已重命名为 ${data.new_name}`, 'success');
+            });
 
-                function ensureStructuredBubble(mid) {
-                    const key = String(mid);
-                    let node = getPendingNode(key);
-                    if (!node) return null;
-                    if (!node.dataset.structured) {
-                        node.dataset.structured = '1';
-                        node.style.whiteSpace = 'normal';
-                        node.innerHTML = '';
-                        const wrap = document.createElement('div');
-                        wrap.className = 'ai-stream';
-                        node.appendChild(wrap);
-                        streamStructs.set(key, { container: wrap, sections: new Map(), current: 'log' });
-                    }
-                    if (!streamStructs.has(key)) {
-                        const wrap = document.createElement('div');
-                        wrap.className = 'ai-stream';
-                        node.appendChild(wrap);
-                        streamStructs.set(key, { container: wrap, sections: new Map(), current: 'log' });
-                    }
-                    return streamStructs.get(key);
-                }
+            socket.on('device_rename_error', (error) => {
+                showToast('设备重命名错误: ' + error, 'danger');
+            });
 
-                function getOrCreateSection(struct, key, title) {
-                    let sec = struct.sections.get(key);
-                    if (!sec) {
-                        const secEl = document.createElement('div');
-                        secEl.className = 'ai-section';
-                        const titleEl = document.createElement('div');
-                        titleEl.className = 'ai-sec-title';
-                        titleEl.textContent = title;
-                        const bodyEl = document.createElement('pre');
-                        bodyEl.className = 'ai-sec-body';
-                        secEl.appendChild(titleEl);
-                        secEl.appendChild(bodyEl);
-                        struct.container.appendChild(secEl);
-                        sec = { el: secEl, body: bodyEl };
-                        struct.sections.set(key, sec);
-                    }
-                    return sec;
-                }
+            socket.on('saved_device_deleted', (data) => {
+                showToast(`保存的设备 ${data.device_id} 已删除`, 'success');
+            });
 
-                function appendLineToSection(struct, key, title, line) {
-                    const sec = getOrCreateSection(struct, key, title);
-                    const current = sec.body.textContent || '';
-                    sec.body.textContent = current ? (current + '\n' + line) : line;
-                }
+            socket.on('saved_device_delete_error', (error) => {
+                showToast('保存的设备删除错误: ' + error, 'danger');
+            });
 
-                function processStream(mid, text) {
-                    if (!text) return;
-                    const key = String(mid);
-                    const struct = ensureStructuredBubble(key);
-                    if (!struct) return;
-                    const lines = String(text).split(/\r?\n/).filter(Boolean);
-                    for (const raw of lines) {
-                        const line = raw.trim();
-                        let secKey = struct.current || 'log';
-                        // 标题切换
-                        if (line.includes('### Manager')) { secKey = 'manager'; struct.current = 'manager'; appendLineToSection(struct, 'manager', 'Manager', ''); continue; }
-                        if (line.includes('### Operator')) { secKey = 'operator'; struct.current = 'operator'; appendLineToSection(struct, 'operator', 'Operator', ''); continue; }
-                        if (line.includes('### Action Reflector')) { secKey = 'reflector'; struct.current = 'reflector'; appendLineToSection(struct, 'reflector', 'Action Reflector', ''); continue; }
-                        if (line.includes('### NoteKeeper') || line.includes('### NoteKeeper') || line.includes('### NoteKeeper ...')) { secKey = 'notekeeper'; struct.current = 'notekeeper'; appendLineToSection(struct, 'notekeeper', 'NoteKeeper', ''); continue; }
-                        // 常见字段归类
-                        if (/^(Completed subgoal:|Planning thought:|Plan:)/i.test(line)) { appendLineToSection(struct, 'manager', 'Manager', line); continue; }
-                        if (/^(Thought:|Action:|Action description:)/i.test(line)) { appendLineToSection(struct, 'operator', 'Operator', line); continue; }
-                        if (/^(Action reflection )/i.test(line)) { appendLineToSection(struct, 'reflector', 'Action Reflector', line); continue; }
-                        if (/^(Important notes:)/i.test(line)) { appendLineToSection(struct, 'notekeeper', 'NoteKeeper', line); continue; }
-                        // 其他归为日志
-                        appendLineToSection(struct, 'log', '日志', line);
-                    }
-                    messagesEl.scrollTop = messagesEl.scrollHeight;
-                }
-
-                function appendPending(mid, delta) {
-                    processStream(mid, delta);
-                }
-
-                function clearPendingTimer(mid) {
-                    const t = pendingTimers.get(mid);
-                    if (t) {
-                        clearTimeout(t);
-                        pendingTimers.delete(mid);
-                    }
-                }
-
-                function sendMessage() {
-                    const text = (inputEl.value || '').trim();
-                    if (!text) return;
-                    inputEl.value = '';
-                    const mid = nextMessageId++;
-                    appendMessage('user', text, mid);
-                    const pending = appendMessage('ai', '正在思考…', mid);
-                    pendingAiNodes.set(String(mid), pending);
-
-                    // 通过 Socket.IO 发送（后端接入后可返回真实答案）
-                    try {
-                        socket.emit('ai_chat_message', { mid, text });
-                    } catch (e) {
-                        // 安静失败，走本地回退
-                    }
-
-                    // 设置运行态
-                    currentRunningMid = String(mid);
-                    if (stopBtn) stopBtn.disabled = false;
-                    sendBtn.disabled = true;
-                    inputEl.disabled = true;
-                }
-
-                sendBtn.addEventListener('click', sendMessage);
-                inputEl.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        sendMessage();
-                    }
-                });
-
-                if (stopBtn) {
-                    stopBtn.addEventListener('click', () => {
-                        if (!currentRunningMid) return;
-                        try {
-                            socket.emit('ai_chat_stop', { mid: currentRunningMid });
-                            stopBtn.disabled = true; // 防抖
-                        } catch (e) { }
-                    });
-                }
-
-                // 处理后端回复（可选）：预期格式 { mid, text }
-                socket.on('ai_chat_reply', (payload) => {
-                    try {
-                        const { mid, text } = payload || {};
-                        const key = String(mid);
-                        if (mid !== undefined) {
-                            clearPendingTimer(key);
-                            updatePending(key, text || '（空回复）');
-                            pendingAiNodes.delete(key);
-                            if (currentRunningMid === key) {
-                                currentRunningMid = null;
-                                if (stopBtn) stopBtn.disabled = true;
-                                sendBtn.disabled = false;
-                                inputEl.disabled = false;
-                            }
-                        }
-                    } catch (e) {
-                        console.warn('ai_chat_reply handler error:', e);
-                    }
-                });
-
-                // 处理后端流式日志：预期格式 { mid, text }
-                socket.on('ai_chat_stream', (payload) => {
-                    try {
-                        const { mid, text } = payload || {};
-                        if (mid === undefined || !text) return;
-                        appendPending(mid, String(text));
-                    } catch (e) {
-                        console.warn('ai_chat_stream handler error:', e);
-                    }
-                });
-
-                // 处理后端推送的截图：预期格式 { mid, images: [dataUrl...] }
-                socket.on('ai_chat_images', (payload) => {
-                    try {
-                        const { mid, images } = payload || {};
-                        if (mid === undefined || !images || !Array.isArray(images) || images.length === 0) return;
-                        const key = String(mid);
-                        const struct = ensureStructuredBubble(key);
-                        if (!struct) return;
-                        // 使用单独的图片区块
-                        let sec = getOrCreateSection(struct, 'images', '截图');
-                        // 将 <pre> 改为容器
-                        if (sec.body.tagName.toLowerCase() === 'pre') {
-                            const container = document.createElement('div');
-                            container.className = 'ai-sec-body images-body';
-                            sec.el.replaceChild(container, sec.body);
-                            sec.body = container;
-                        }
-                        for (const url of images) {
-                            const img = document.createElement('img');
-                            img.src = String(url);
-                            img.alt = '日志截图';
-                            img.loading = 'lazy';
-                            img.className = 'ai-image';
-                            sec.body.appendChild(img);
-                        }
-                        messagesEl.scrollTop = messagesEl.scrollHeight;
-                    } catch (e) {
-                        console.warn('ai_chat_images handler error:', e);
-                    }
-                });
-
-                socket.on('ai_chat_stopped', (payload) => {
-                    try {
-                        const { mid, ok, msg } = payload || {};
-                        const key = String(mid);
-                        ensureStructuredBubble(key);
-                        const struct = streamStructs.get(key);
-                        if (struct) {
-                            appendLineToSection(struct, 'log', '日志', `【${ok ? '已停止' : '停止失败'}】${msg || ''}`);
-                        }
-                        if (currentRunningMid === key) {
-                            currentRunningMid = null;
-                            if (stopBtn) stopBtn.disabled = true;
-                            sendBtn.disabled = false;
-                            inputEl.disabled = false;
-                        }
-                    } catch (e) {
-                        console.warn('ai_chat_stopped handler error:', e);
-                    }
-                });
-
-                // 渲染每步摘要与前后截图：{ mid, steps: [{ step_id, manager, operator, reflector, images: [{label,url}]}] }
-                socket.on('ai_chat_steps', (payload) => {
-                    try {
-                        const { mid, steps } = payload || {};
-                        if (mid === undefined || !Array.isArray(steps) || steps.length === 0) return;
-                        const key = String(mid);
-                        const struct = ensureStructuredBubble(key);
-                        if (!struct) return;
-                        let sec = getOrCreateSection(struct, 'steps', '分步记录');
-                        // 将 <pre> 改为容器
-                        if (sec.body.tagName.toLowerCase() === 'pre') {
-                            const container = document.createElement('div');
-                            container.className = 'ai-sec-body steps-body';
-                            sec.el.replaceChild(container, sec.body);
-                            sec.body = container;
-                        }
-                        for (const st of steps) {
-                            const card = document.createElement('div');
-                            card.className = 'step-card';
-                            const title = document.createElement('div');
-                            title.className = 'step-title';
-                            title.textContent = `步骤 ${st.step_id ?? ''}`.trim();
-                            card.appendChild(title);
-
-                            const meta = document.createElement('div');
-                            meta.className = 'step-meta';
-                            const mgr = st.manager || {}; const opr = st.operator || {}; const rfl = st.reflector || {};
-                            const lines = [];
-                            if (mgr.thought || mgr.plan) lines.push(`Manager: ${[mgr.thought, mgr.plan].filter(Boolean).join(' | ')}`);
-                            if (opr.thought || opr.action || opr.description) lines.push(`Operator: ${[opr.thought, opr.action, opr.description].filter(Boolean).join(' | ')}`);
-                            if (rfl.outcome || rfl.error_description) lines.push(`Reflector: ${[rfl.outcome, rfl.error_description].filter(Boolean).join(' | ')}`);
-                            meta.textContent = lines.join('\n');
-                            card.appendChild(meta);
-
-                            const grid = document.createElement('div');
-                            grid.className = 'images-grid';
-                            if (Array.isArray(st.images)) {
-                                for (const im of st.images) {
-                                    const item = document.createElement('div');
-                                    item.className = 'image-item';
-                                    const lab = document.createElement('div');
-                                    lab.className = 'image-label';
-                                    lab.textContent = im.label || '';
-                                    const img = document.createElement('img');
-                                    img.src = String(im.url || '');
-                                    img.alt = lab.textContent || '截图';
-                                    img.loading = 'lazy';
-                                    img.className = 'ai-image thumb';
-                                    img.addEventListener('click', () => openLightbox(img.src, lab.textContent));
-                                    item.appendChild(lab);
-                                    item.appendChild(img);
-                                    grid.appendChild(item);
-                                }
-                            }
-                            card.appendChild(grid);
-                            sec.body.appendChild(card);
-                        }
-                        messagesEl.scrollTop = messagesEl.scrollHeight;
-                    } catch (e) {
-                        console.warn('ai_chat_steps handler error:', e);
-                    }
-                });
-            })();
-        </script>
-        <style>
-            /* AI 分段显示样式 */
-            .ai-section {
-                background: #f4f6f8;
-                border: 1px solid #e3e6ea;
-                border-radius: 6px;
-                padding: 6px 8px;
-                margin: 6px 0;
-            }
-
-            .ai-sec-title {
-                font-weight: 600;
-                color: #0d6efd;
-                font-size: 12px;
-                margin-bottom: 4px;
-            }
-
-            .ai-sec-body {
-                margin: 0;
-                white-space: pre-wrap;
-                word-break: break-word;
-                font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-                font-size: 12px;
-                color: #222;
-            }
-
-            .images-body {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-                gap: 8px;
-            }
-
-            .ai-image {
-                width: 100%;
-                height: auto;
-                border: 1px solid #e3e6ea;
-                border-radius: 6px;
-                background: #fff;
-            }
-
-            /* 分步记录样式 */
-            .steps-body { display: flex; flex-direction: column; gap: 8px; }
-            .step-card { border: 1px solid #e3e6ea; border-radius: 6px; padding: 8px; background: #fff; }
-            .step-title { font-weight: 600; color: #333; margin-bottom: 4px; }
-            .step-meta { white-space: pre-wrap; font-size: 12px; color: #555; margin-bottom: 6px; }
-            .images-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
-            .image-item { display: flex; flex-direction: column; gap: 4px; }
-            .image-label { font-size: 12px; color: #0d6efd; }
-
-            /* Lightbox */
-            .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 9999; }
-            .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.5); }
-            .lightbox .lb-caption { color: #fff; margin-top: 8px; text-align: center; font-size: 14px; }
-
-            .ai-image.thumb { cursor: zoom-in; }
-        </style>
-
-        <!-- Lightbox overlay -->
-        <div id="lightbox" class="lightbox" onclick="closeLightbox(event)">
-            <div class="lb-inner">
-                <img id="lb-image" src="" alt="" />
-                <div id="lb-caption" class="lb-caption"></div>
-            </div>
-        </div>
-
-        <script>
-            function openLightbox(src, caption) {
-                try {
-                    const lb = document.getElementById('lightbox');
-                    const img = document.getElementById('lb-image');
-                    const cap = document.getElementById('lb-caption');
-                    img.src = src || '';
-                    cap.textContent = caption || '';
-                    lb.style.display = 'flex';
-                } catch (e) {}
-            }
-            function closeLightbox(e) {
-                const lb = document.getElementById('lightbox');
-                if (e.target && e.target.id === 'lightbox') {
-                    lb.style.display = 'none';
-                    const img = document.getElementById('lb-image');
-                    img.src = '';
-                    document.getElementById('lb-caption').textContent = '';
-                }
-            }
+            // 初始化时请求设备列表
+            socket.emit('get_device_list');
+            socket.emit('get_saved_devices');
         </script>
 </body>
 
