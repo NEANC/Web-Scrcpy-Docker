@@ -199,11 +199,6 @@ def handle_device_disconnect(data):
         device_manager.adb_manager.disconnect_device(
             *device_id.split(':') if ':' in device_id else (device_id, None)
         )
-        # 从保存的设备列表中移除该设备
-        saved_devices = get_saved_devices()
-        if device_id in saved_devices:
-            saved_devices.remove(device_id)
-            save_devices(saved_devices)
         emit('device_list_update', device_manager.get_device_list())
         print(f'Device disconnected: {device_id}')
 
