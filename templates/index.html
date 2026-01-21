@@ -431,6 +431,14 @@
                     <div class="list-group-item py-2"><small class="text-muted">正在加载设备列表...</small></div>
                 </div>
             </div>
+
+            <!-- 保存的设备列表 -->
+            <div class="device-section">
+                <h3>保存的设备</h3>
+                <div id="saved-devices-container" class="device-list-content list-group">
+                    <div class="list-group-item py-2"><small class="text-muted">正在加载保存的设备...</small></div>
+                </div>
+            </div>
         </div>
     </div>
     <!-- 右侧 AI 边栏 -->
@@ -829,6 +837,11 @@
                 }
             });
 
+            // 接收保存的设备列表
+            socket.on('saved_devices', (devices) => {
+                updateSavedDevicesList(devices);
+            });
+
             // 使用 Socket.IO 事件
             socket.on('disconnect', () => {
                 showToast('连接已断开，请刷新页面重新连接', 'warning');
@@ -978,6 +991,41 @@
                         } else {
                             socket.emit('disconnect_device', { device_id: deviceId });
                         }
+                    });
+                });
+            }
+
+            // 更新保存的设备列表
+            function updateSavedDevicesList(devices) {
+                const savedDevicesContainer = document.getElementById('saved-devices-container');
+                if (!savedDevicesContainer) return;
+
+                if (!devices || devices.length === 0) {
+                    savedDevicesContainer.innerHTML = '<div class="list-group-item py-2"><small class="text-muted">没有保存的设备</small></div>';
+                    return;
+                }
+
+                savedDevicesContainer.innerHTML = devices.map(device => {
+                    const [ip, port] = device.split(':');
+                    return `
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <span class="fw-semibold">${device}</span>
+                            <button class="connect-saved-device-btn btn btn-primary btn-sm" data-ip="${ip}" data-port="${port}">快速连接</button>
+                        </div>
+                    </div>
+                `;
+                }).join('');
+
+                // 添加事件监听
+                savedDevicesContainer.querySelectorAll('.connect-saved-device-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const ip = btn.getAttribute('data-ip');
+                        const port = btn.getAttribute('data-port');
+                        deviceIpInput.value = ip;
+                        devicePortInput.value = port;
+                        // 触发连接按钮的点击事件
+                        document.getElementById('connect-btn').click();
                     });
                 });
             }

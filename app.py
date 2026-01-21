@@ -25,13 +25,22 @@ def get_saved_adb_address():
     port = config.get('ADB_DEVICE_PORT', '5555')
     return ip, port
 
-def save_adb_address(ip, port):
+def get_saved_devices():
     """
-    将 ADB 地址保存到 .env 文件中
+    从 .env 文件中读取保存的所有设备 ADB 地址
     """
     config = dotenv_values()
-    config['ADB_DEVICE_IP'] = ip
-    config['ADB_DEVICE_PORT'] = port
+    devices_str = config.get('ADB_DEVICES', '')
+    if not devices_str:
+        return []
+    return [device.strip() for device in devices_str.split(',') if device.strip()]
+
+def save_devices(devices):
+    """
+    将所有已连接的设备 ADB 地址保存到 .env 文件中
+    """
+    config = dotenv_values()
+    config['ADB_DEVICES'] = ','.join(devices)
     
     with open('.env', 'w') as f:
         for key, value in config.items():
@@ -144,9 +153,9 @@ def handle_connect():
     client_sid = request.sid
     # 发送当前设备列表
     emit('device_list_update', device_manager.get_device_list())
-    # 发送保存的 ADB 地址
-    ip, port = get_saved_adb_address()
-    emit('saved_adb_address', {'ip': ip, 'port': port})
+    # 发送保存的设备列表
+    saved_devices = get_saved_devices()
+    emit('saved_devices', saved_devices)
     return True
 
 def get_current_mirroring_device_id():
@@ -174,8 +183,11 @@ def handle_device_connect(data):
         success, output = device_manager.adb_manager.connect_to_device(ip, port)
         if success:
             if device_manager.add_device(device_id):
-                # 保存 ADB 地址到 .env 文件
-                save_adb_address(ip, str(port))
+                # 更新保存的设备列表
+                saved_devices = get_saved_devices()
+                if device_id not in saved_devices:
+                    saved_devices.append(device_id)
+                    save_devices(saved_devices)
                 emit('device_list_update', device_manager.get_device_list())
                 print(f'Device connected successfully: {device_id}')
             else:
@@ -196,6 +208,11 @@ def handle_device_disconnect(data):
         device_manager.adb_manager.disconnect_device(
             *device_id.split(':') if ':' in device_id else (device_id, None)
         )
+        # 从保存的设备列表中移除该设备
+        saved_devices = get_saved_devices()
+        if device_id in saved_devices:
+            saved_devices.remove(device_id)
+            save_devices(saved_devices)
         emit('device_list_update', device_manager.get_device_list())
         print(f'Device disconnected: {device_id}')
 
