@@ -443,4 +443,4 @@ if __name__ == '__main__':
     parser.add_argument('--port', type=int, default=5000, help='port to bind the web server to')
     args = parser.parse_args()
     video_bit_rate = args.video_bit_rate
-    socketio.run(app, host='0.0.0.0', port=args.port)
+    socketio.run(app, host='0.0.0.0', port=args.port, allow_unsafe_werkzeug=True)

@@ -1,6 +1,10 @@
 services:
   web-scrcpy:
     image: ghcr.io/neanc/web-scrcpy:latest
+    container_name: web-scrcpy
+    hostname: web-scrcpy
+    networks:
+      - web-scrcpy
     ports:
       - "5000:5000"
     volumes:
@@ -11,3 +15,7 @@ services:
     environment:
       - FLASK_ENV=production
       - FLASK_APP=app.py
+
+networks:
+   moviepilot:
+     name: web-scrcpy
