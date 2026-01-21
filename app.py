@@ -237,6 +237,14 @@ def handle_start_mirror(data):
     except Exception as e:
         print(f"Error stopping previous mirrors: {e}")
 
+    # 确保设备被保存到 .env 文件
+    saved_devices = get_saved_devices()
+    if device_id not in saved_devices:
+        saved_devices.append(device_id)
+        save_devices(saved_devices)
+        emit('saved_devices', saved_devices)
+        print(f'Device saved to .env: {device_id}')
+
     if device_manager.start_mirror(device_id, send_video_data):
         socketio.start_background_task(video_send_task)
         emit('device_list_update', device_manager.get_device_list())
