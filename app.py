@@ -60,15 +60,27 @@ class DeviceManager:
         self.devices = {}  # 存储所有连接的设备
         self.adb_manager = ADBManager()
 
-    def add_device(self, device_id, state="device"):
+    def add_device(self, device_id, state="device", name=None):
         # 检查设备是否已存在
         if device_id not in self.devices:
+            # 如果没有提供名称，使用设备ID作为名称
+            device_name = name if name else device_id
             self.devices[device_id] = {
                 "id": device_id,
+                "name": device_name,
                 "state": state,
                 "is_mirroring": False,
                 "scrcpy": None
             }
+            return True
+        return False
+    
+    def rename_device(self, device_id, new_name):
+        """
+        重命名已连接的设备
+        """
+        if device_id in self.devices:
+            self.devices[device_id]["name"] = new_name
             return True
         return False
 
@@ -102,6 +114,7 @@ class DeviceManager:
         return [
             {
                 "id": d["id"],
+                "name": d["name"],
                 "state": d["state"],
                 "is_mirroring": d["is_mirroring"]
             }
@@ -190,9 +203,16 @@ def handle_device_connect(data):
         print(f'Trying to connect to device: {device_id}')
         success, output = device_manager.adb_manager.connect_to_device(ip, port)
         if success:
-            if device_manager.add_device(device_id):
+            # 检查设备是否已保存，获取保存的名称
+            saved_devices = get_saved_devices()
+            device_name = device_id
+            for device in saved_devices:
+                if device['address'] == device_id:
+                    device_name = device['name']
+                    break
+            
+            if device_manager.add_device(device_id, name=device_name):
                 # 更新保存的设备列表
-                saved_devices = get_saved_devices()
                 # 检查设备是否已保存（通过address字段）
                 device_exists = any(device['address'] == device_id for device in saved_devices)
                 if not device_exists:
@@ -270,12 +290,48 @@ def handle_rename_saved_device(data):
             save_devices(saved_devices)
             # 发送更新后的设备列表
             emit('saved_devices', saved_devices)
+            # 同时更新已连接设备的名称
+            if device_address in device_manager.devices:
+                device_manager.rename_device(device_address, new_name)
+                emit('device_list_update', device_manager.get_device_list())
             print(f'Saved device renamed: {device_address} -> {new_name}')
         else:
             emit('error', {'message': '设备未找到'})
     except Exception as e:
         emit('error', {'message': f'重命名设备失败: {str(e)}'})
         print(f'Error renaming saved device: {e}')
+
+@socketio.on('rename_device')
+def handle_rename_device(data):
+    """
+    处理重命名已连接设备的请求
+    """
+    device_id = data.get('device_id')
+    new_name = data.get('new_name')
+    try:
+        if not device_id or not new_name:
+            emit('error', {'message': '设备ID和新名称不能为空'})
+            return
+        
+        # 重命名已连接的设备
+        if device_manager.rename_device(device_id, new_name):
+            # 同时更新保存的设备列表中的设备名称
+            saved_devices = get_saved_devices()
+            for device in saved_devices:
+                if device['address'] == device_id:
+                    device['name'] = new_name
+                    save_devices(saved_devices)
+                    emit('saved_devices', saved_devices)
+                    break
+            
+            # 发送更新后的设备列表
+            emit('device_list_update', device_manager.get_device_list())
+            print(f'Device renamed: {device_id} -> {new_name}')
+        else:
+            emit('error', {'message': '设备未找到'})
+    except Exception as e:
+        emit('error', {'message': f'重命名设备失败: {str(e)}'})
+        print(f'Error renaming device: {e}')
 
 @socketio.on('start_mirror')
 def handle_start_mirror(data):

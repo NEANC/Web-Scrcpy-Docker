@@ -900,6 +900,7 @@
                         <div class="mt-2 d-flex gap-2">
                             ${actionButtons}
                             <button class="disconnect-btn btn btn-secondary btn-sm" data-device="${device.id}">断开连接</button>
+                            <button class="rename-device-btn btn btn-info btn-sm" data-device="${device.id}" data-name="${deviceName}">重命名</button>
                         </div>
                     </div>
                 `;
@@ -941,6 +942,18 @@
                             pendingStopTimers.set(deviceId, t);
                         } else {
                             socket.emit('disconnect_device', { device_id: deviceId });
+                        }
+                    });
+                });
+
+                // 添加重命名按钮事件监听
+                deviceListContent.querySelectorAll('.rename-device-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const deviceId = btn.getAttribute('data-device');
+                        const currentName = btn.getAttribute('data-name');
+                        const newName = prompt('请输入新的设备名称:', currentName);
+                        if (newName && newName.trim() !== '') {
+                            socket.emit('rename_device', { device_id: deviceId, new_name: newName.trim() });
                         }
                     });
                 });
