@@ -3,3 +3,6 @@ flask-socketio
 Pillow
 numpy
 python-dotenv
+gunicorn
+gevent
+gevent-websocket
