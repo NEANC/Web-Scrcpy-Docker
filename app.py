@@ -10,6 +10,32 @@ import sys
 import threading
 from pathlib import Path
 import re
+from dotenv import load_dotenv, dotenv_values
+
+# 加载 .env 文件
+load_dotenv()
+
+# 读取和写入 .env 文件中的 ADB 地址
+def get_saved_adb_address():
+    """
+    从 .env 文件中读取保存的 ADB 地址
+    """
+    config = dotenv_values()
+    ip = config.get('ADB_DEVICE_IP', '')
+    port = config.get('ADB_DEVICE_PORT', '5555')
+    return ip, port
+
+def save_adb_address(ip, port):
+    """
+    将 ADB 地址保存到 .env 文件中
+    """
+    config = dotenv_values()
+    config['ADB_DEVICE_IP'] = ip
+    config['ADB_DEVICE_PORT'] = port
+    
+    with open('.env', 'w') as f:
+        for key, value in config.items():
+            f.write(f'{key}={value}\n')
 
 # 设备管理器
 class DeviceManager:
@@ -118,6 +144,9 @@ def handle_connect():
     client_sid = request.sid
     # 发送当前设备列表
     emit('device_list_update', device_manager.get_device_list())
+    # 发送保存的 ADB 地址
+    ip, port = get_saved_adb_address()
+    emit('saved_adb_address', {'ip': ip, 'port': port})
     return True
 
 def get_current_mirroring_device_id():
@@ -145,6 +174,8 @@ def handle_device_connect(data):
         success, output = device_manager.adb_manager.connect_to_device(ip, port)
         if success:
             if device_manager.add_device(device_id):
+                # 保存 ADB 地址到 .env 文件
+                save_adb_address(ip, str(port))
                 emit('device_list_update', device_manager.get_device_list())
                 print(f'Device connected successfully: {device_id}')
             else:

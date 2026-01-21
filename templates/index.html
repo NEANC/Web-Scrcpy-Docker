@@ -816,7 +816,17 @@
             });
 
             socket.on('connect', () => {
-                showToast('已连接，正在接收视频数据...', 'success');
+                showToast('已连接到服务器', 'success');
+            });
+
+            // 接收保存的 ADB 地址
+            socket.on('saved_adb_address', (data) => {
+                if (data.ip) {
+                    deviceIpInput.value = data.ip;
+                }
+                if (data.port) {
+                    devicePortInput.value = data.port;
+                }
             });
 
             // 使用 Socket.IO 事件
