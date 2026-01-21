@@ -17,5 +17,5 @@ services:
       - FLASK_APP=app.py
 
 networks:
-   moviepilot:
+   web-scrcpy:
      name: web-scrcpy
