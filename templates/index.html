@@ -957,15 +957,17 @@
                 }
 
                 savedDevicesContainer.innerHTML = devices.map(device => {
-                    const [ip, port] = device.split(':');
+                    const [ip, port] = device.address.split(':');
                     return `
                     <div class="list-group-item">
                         <div class="d-flex w-100 justify-content-between align-items-center">
-                            <span class="fw-semibold">${device}</span>
-                            <div class="btn-group" role="group">
-                                <button class="connect-saved-device-btn btn btn-primary btn-sm" data-ip="${ip}" data-port="${port}">连接</button>
-                                <button class="delete-saved-device-btn btn btn-danger btn-sm" data-device="${device}">删除</button>
-                            </div>
+                            <span class="fw-semibold">${device.name}</span>
+                        </div>
+                        <div class="small text-muted">TCP地址：${device.address}</div>
+                        <div class="mt-2 d-flex gap-2">
+                            <button class="connect-saved-device-btn btn btn-success btn-sm" data-ip="${ip}" data-port="${port}" data-address="${device.address}">连接</button>
+                            <button class="rename-saved-device-btn btn btn-secondary btn-sm" data-address="${device.address}" data-name="${device.name}">重命名</button>
+                            <button class="delete-saved-device-btn btn btn-danger btn-sm" data-device="${device.address}">删除</button>
                         </div>
                     </div>
                 `;
@@ -980,6 +982,18 @@
                         devicePortInput.value = port;
                         // 触发连接按钮的点击事件
                         document.getElementById('connect-btn').click();
+                    });
+                });
+
+                // 添加重命名按钮事件监听
+                savedDevicesContainer.querySelectorAll('.rename-saved-device-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const deviceAddress = btn.getAttribute('data-address');
+                        const currentName = btn.getAttribute('data-name');
+                        const newName = prompt('请输入新的设备名称:', currentName);
+                        if (newName && newName.trim() !== '') {
+                            socket.emit('rename_saved_device', { device_address: deviceAddress, new_name: newName.trim() });
+                        }
                     });
                 });
 

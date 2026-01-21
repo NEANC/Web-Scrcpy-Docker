@@ -15,23 +15,40 @@ from dotenv import load_dotenv, dotenv_values
 # 加载 .env 文件
 load_dotenv()
 
+import json
+
 # 读取和写入 .env 文件中的 ADB 地址
 def get_saved_devices():
     """
     从 .env 文件中读取保存的所有设备 ADB 地址
+    支持旧格式（逗号分隔）和新格式（JSON）
     """
     config = dotenv_values()
     devices_str = config.get('ADB_DEVICES', '')
     if not devices_str:
         return []
-    return [device.strip() for device in devices_str.split(',') if device.strip()]
+    
+    # 尝试解析为 JSON 格式（新格式）
+    try:
+        devices_data = json.loads(devices_str)
+        # 转换为列表格式：[{"name": "设备名称", "address": "ADB地址"}]
+        return [{'name': name, 'address': address} for name, address in devices_data.items()]
+    except json.JSONDecodeError:
+        # 解析失败，使用旧格式（逗号分隔）
+        devices = [device.strip() for device in devices_str.split(',') if device.strip()]
+        # 转换为新的列表格式，设备名称默认为地址
+        return [{'name': device, 'address': device} for device in devices]
 
 def save_devices(devices):
     """
     将所有已连接的设备 ADB 地址保存到 .env 文件中
+    使用 JSON 格式存储设备名称和地址的映射关系
     """
     config = dotenv_values()
-    config['ADB_DEVICES'] = ','.join(devices)
+    
+    # 转换为字典格式：{"设备名称": "ADB地址"}
+    devices_dict = {device['name']: device['address'] for device in devices}
+    config['ADB_DEVICES'] = json.dumps(devices_dict)
     
     with open('.env', 'w') as f:
         for key, value in config.items():
@@ -176,8 +193,11 @@ def handle_device_connect(data):
             if device_manager.add_device(device_id):
                 # 更新保存的设备列表
                 saved_devices = get_saved_devices()
-                if device_id not in saved_devices:
-                    saved_devices.append(device_id)
+                # 检查设备是否已保存（通过address字段）
+                device_exists = any(device['address'] == device_id for device in saved_devices)
+                if not device_exists:
+                    # 添加新设备，名称默认为地址
+                    saved_devices.append({'name': device_id, 'address': device_id})
                     save_devices(saved_devices)
                 emit('device_list_update', device_manager.get_device_list())
                 print(f'Device connected successfully: {device_id}')
@@ -207,21 +227,55 @@ def handle_delete_saved_device(data):
     """
     处理删除保存设备的请求
     """
-    device_id = data.get('device_id')
+    device_address = data.get('device_id')
     try:
-        # 从保存的设备列表中移除该设备
+        # 从保存的设备列表中移除该设备（通过address字段）
         saved_devices = get_saved_devices()
-        if device_id in saved_devices:
-            saved_devices.remove(device_id)
-            save_devices(saved_devices)
+        # 过滤掉要删除的设备
+        new_saved_devices = [device for device in saved_devices if device['address'] != device_address]
+        if len(new_saved_devices) < len(saved_devices):
+            save_devices(new_saved_devices)
             # 发送更新后的设备列表
-            emit('saved_devices', saved_devices)
-            print(f'Saved device deleted: {device_id}')
+            emit('saved_devices', new_saved_devices)
+            print(f'Saved device deleted: {device_address}')
         else:
             emit('error', {'message': '设备未找到'})
     except Exception as e:
         emit('error', {'message': f'删除设备失败: {str(e)}'})
         print(f'Error deleting saved device: {e}')
+
+@socketio.on('rename_saved_device')
+def handle_rename_saved_device(data):
+    """
+    处理重命名保存设备的请求
+    """
+    device_address = data.get('device_address')
+    new_name = data.get('new_name')
+    try:
+        if not device_address or not new_name:
+            emit('error', {'message': '设备地址和新名称不能为空'})
+            return
+        
+        # 从保存的设备列表中找到对应的设备
+        saved_devices = get_saved_devices()
+        device_found = False
+        
+        for device in saved_devices:
+            if device['address'] == device_address:
+                device['name'] = new_name
+                device_found = True
+                break
+        
+        if device_found:
+            save_devices(saved_devices)
+            # 发送更新后的设备列表
+            emit('saved_devices', saved_devices)
+            print(f'Saved device renamed: {device_address} -> {new_name}')
+        else:
+            emit('error', {'message': '设备未找到'})
+    except Exception as e:
+        emit('error', {'message': f'重命名设备失败: {str(e)}'})
+        print(f'Error renaming saved device: {e}')
 
 @socketio.on('start_mirror')
 def handle_start_mirror(data):
@@ -239,8 +293,11 @@ def handle_start_mirror(data):
 
     # 确保设备被保存到 .env 文件
     saved_devices = get_saved_devices()
-    if device_id not in saved_devices:
-        saved_devices.append(device_id)
+    # 检查设备是否已保存（通过address字段）
+    device_exists = any(device['address'] == device_id for device in saved_devices)
+    if not device_exists:
+        # 添加新设备，名称默认为地址
+        saved_devices.append({'name': device_id, 'address': device_id})
         save_devices(saved_devices)
         emit('saved_devices', saved_devices)
         print(f'Device saved to .env: {device_id}')
