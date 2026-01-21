@@ -221,6 +221,25 @@ def handle_device_connect(data):
                     save_devices(saved_devices)
                 emit('device_list_update', device_manager.get_device_list())
                 print(f'Device connected successfully: {device_id}')
+                
+                # 若已有其他设备在镜像，先关闭它们
+                try:
+                    for did, info in list(device_manager.devices.items()):
+                        if info["is_mirroring"] and did != device_id:
+                            device_manager.stop_mirror(did)
+                            emit('mirror_stopped', {'device_id': did})
+                    # 更新设备列表（状态变更）
+                    emit('device_list_update', device_manager.get_device_list())
+                except Exception as e:
+                    print(f"Error stopping previous mirrors: {e}")
+                
+                # 自动开始镜像
+                if device_manager.start_mirror(device_id, send_video_data):
+                    socketio.start_background_task(video_send_task)
+                    emit('device_list_update', device_manager.get_device_list())
+                    emit('mirror_started', {'device_id': device_id})
+                else:
+                    emit('mirror_error', '启动镜像失败')
             else:
                 device_manager.adb_manager.disconnect_device(ip, port)
                 emit('connection_error', '设备添加失败')

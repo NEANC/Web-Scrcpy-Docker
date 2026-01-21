@@ -319,7 +319,7 @@
                             <input type="number" id="device-port" value="5555" class="form-control">
                         </div>
                     </div>
-                    <button id="connect-btn" class="btn btn-primary mt-2">连接设备</button>
+                    <button id="connect-btn" class="btn btn-primary mt-2">连接</button>
                 </div>
                 <!-- 状态提示改为右上角 Toasts 展示 -->
                 <p id="screen-size" class="status-text" style="border-left-color:#6c757d;">屏幕尺寸：未知</p>
@@ -335,9 +335,9 @@
 
             <!-- 保存的设备列表 -->
             <div class="device-section">
-                <h3>保存的设备</h3>
+                <h3>已保存的设备</h3>
                 <div id="saved-devices-container" class="device-list-content list-group">
-                    <div class="list-group-item py-2"><small class="text-muted">正在加载保存的设备...</small></div>
+                    <div class="list-group-item py-2"><small class="text-muted">正在加载保存的设备列表...</small></div>
                 </div>
             </div>
         </div>
@@ -791,7 +791,7 @@
                             <span class="fw-semibold">${deviceName}</span>
                             <small class="text-muted">${statusText}</small>
                         </div>
-                        <div class="small text-muted">TCP地址：${tcpAddr}</div>
+                        <div class="small text-muted">地址：${tcpAddr}</div>
                         <div class="mt-2 d-flex gap-2">
                             ${actionButtons}
                             <button class="disconnect-btn btn btn-secondary btn-sm" data-device="${device.id}">断开连接</button>
@@ -871,7 +871,7 @@
                         <div class="d-flex w-100 justify-content-between align-items-center">
                             <span class="fw-semibold">${device.name}</span>
                         </div>
-                        <div class="small text-muted">TCP地址：${device.address}</div>
+                        <div class="small text-muted">地址：${device.address}</div>
                         <div class="mt-2 d-flex gap-2">
                             <button class="connect-saved-device-btn btn btn-success btn-sm" data-ip="${ip}" data-port="${port}" data-address="${device.address}">连接</button>
                             <button class="rename-saved-device-btn btn btn-secondary btn-sm" data-address="${device.address}" data-name="${device.name}">重命名</button>
