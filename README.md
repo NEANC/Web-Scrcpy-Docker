@@ -1,6 +1,10 @@
 # Web-Scrcpy Docker
 
-基于 `[WebScrcpy-MobileAgent](https://github.com/ccizm/WebScrcpy-MobileAgent)` 修改，添加了链接时自动镜像与本地保存设备列表功能，移除了 AI 聊天与自动操作功能。  
+> [IMPORTANT]
+> 请注意，Werkzeug 不支持多线程并发，请使用单线程逻辑使用 Web 界面。  
+> 不建议反代到公网，建议使用 VPN 或虚拟局域网等方式进行访问。
+
+相对于上游，添加了链接时自动镜像与本地保存设备列表功能，移除了 AI 聊天与自动操作功能。  
 使用 Docker 镜像在 `x86_64` 与 `arm64` 架构的 Linux 系统上运行；或使用源码形式在 `Windows/macOS/Linux` 系统上运行。
 
 ## 快速开始
