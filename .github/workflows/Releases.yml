@@ -1,0 +1,403 @@
+name: 自动构建二进制文件并发布
+
+on:
+  push:
+    branches: [ dev ]
+    tags:
+      - 'v*'  # 版本号标记
+  pull_request:
+    branches: [ dev ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  # 准备步骤，用于代码检出、版本控制和版本号更新
+  meta:
+    name: Gather Meta Information
+    runs-on: ubuntu-latest
+    outputs:
+      ref_name: ${{ github.ref_name }}
+      tag: ${{ steps.set_tag.outputs.tag }}
+      prerelease: ${{ steps.set_pre.outputs.prerelease }}
+    steps:
+      # 检查代码库
+      - name: Check-out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 确保能获取所有标签
+
+      # 设置版本标签
+      - name: Set tag
+        id: set_tag
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            # For tag pushes, use the tag name
+            tag="${{ github.ref_name }}"
+          else
+            # For PRs and branch pushes, use git describe or fallback
+            tag=$(git describe --tags --match "v*" HEAD 2>/dev/null || echo "v0.0.1-$(git rev-parse --short HEAD)")
+          fi
+          echo "tag=${tag}" | tee -a $GITHUB_OUTPUT
+
+      # 检查是否为预发布版本
+      - name: Check if it is a pre-release
+        id: set_pre
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          if [[ '${{ steps.set_tag.outputs.tag }}' =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "prerelease=false" | tee -a $GITHUB_OUTPUT
+          else
+            echo "prerelease=true" | tee -a $GITHUB_OUTPUT
+          fi
+
+      # 自动生成变更日志
+      - name: Generate Changelog
+        id: generate_changelog
+        run: |
+          echo "=== Generating Changelog ==="
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            # Get previous tag
+            previous_tag=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+            if [[ -n "$previous_tag" ]]; then
+              echo "Generating changelog from $previous_tag to ${{ steps.set_tag.outputs.tag }}"
+              # 获取完整的提交列表
+              git log --oneline "$previous_tag..HEAD" | grep -v "Merge pull request" > full_commits.txt
+              # 计算提交数量
+              total_commits=$(wc -l < full_commits.txt)
+              # 只取前15个提交
+              head -15 full_commits.txt > CHANGELOG.md
+              # 如果提交数量超过15个，添加Full Changelog链接
+              if [[ $total_commits -gt 15 ]]; then
+                echo "" >> CHANGELOG.md
+                echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$previous_tag...${{ steps.set_tag.outputs.tag }}" >> CHANGELOG.md
+              fi
+            else
+              echo "First release, no previous tag found"
+              # 首次发布，只取前15个提交
+              git log --oneline | grep -v "Merge pull request" | head -15 > CHANGELOG.md
+            fi
+          else
+            echo "Generating changelog for development build"
+            # 开发构建，只取前15个提交
+            git log --oneline --since="1 week ago" | grep -v "Merge pull request" | head -15 > CHANGELOG.md
+          fi
+          
+          # Add header to changelog
+          echo "## What's Changed" > temp_changelog.md
+          echo "" >> temp_changelog.md
+          cat CHANGELOG.md >> temp_changelog.md
+          mv temp_changelog.md CHANGELOG.md
+          
+          echo "Changelog generated:"
+          cat CHANGELOG.md
+          echo "===================="
+
+  # Nuitka 构建
+  build-nuitka:
+    name: Build with Nuitka (${{ matrix.os }}-${{ matrix.arch }})
+    needs: meta
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        arch: [x64, arm64]
+        exclude:
+          # Windows 不支持 arm64 架构的 runner
+          - os: windows-latest
+            arch: arm64
+    steps:
+      # 检查代码库
+      - name: Check-out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 确保能获取所有标签
+
+      # 检查当前 Python 版本
+      - name: Check Python
+        id: check_python
+        shell: bash
+        run: |
+          # 检查 Python 版本
+          PYTHON_VERSION=$(python --version 2>&1 || python3 --version 2>&1)
+          echo "Detected Python version: $PYTHON_VERSION"
+          
+          if echo "$PYTHON_VERSION" | grep -i "python 3\.12"; then
+            echo "python_version=3.12" >> $GITHUB_OUTPUT
+            echo "skip_setup=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip_setup=false" >> $GITHUB_OUTPUT
+          fi
+
+      # 设置 Python 环境（仅当当前版本不是 3.12 时）
+      - name: Setup Python
+        if: steps.check_python.outputs.skip_setup != 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: ${{ matrix.arch }}
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
+
+      # 缓存依赖
+      - name: Cache dependencies
+        uses: actions/cache@v5
+        with:
+          path: ${{ runner.os == 'Windows' && '~\AppData\Local\pip\Cache' || '~/.cache/pip' }}
+          key: ${{ runner.os }}-${{ matrix.arch }}-pip-nuitka-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.arch }}-pip-nuitka-
+
+      # 安装依赖
+      - name: Install Dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # 安装 Nuitka 依赖（Linux）
+      - name: Install Nuitka dependencies (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential gcc g++
+
+      # 使用 Nuitka 编译为可执行文件
+      - name: Build Executable with Nuitka
+        uses: Nuitka/Nuitka-Action@main
+        with:
+          nuitka-version: main
+          script-name: app.py
+          mode: onefile
+          windows-console-mode: ${{ runner.os == 'Windows' && 'force' || 'disable' }}
+          assume-yes-for-downloads: true
+          follow-imports: true
+          include-plugin-directory: modules
+          output-dir: build
+          include-package: flask,flask_socketio,scrcpy,adb_manager
+          no-deployment-flag: self-execution
+          nofollow-import-to: '*.tests'
+
+      # 上传 Nuitka 编译的可执行文件作为 artifact
+      - name: Upload Nuitka artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Web-Scrcpy-Nuitka-${{ needs.meta.outputs.tag }}-${{ runner.os }}-${{ matrix.arch }}
+          path: ${{ runner.os == 'Windows' && 'build/app.exe' || 'build/app' }}
+          retention-days: 7
+
+  # PyInstaller 构建
+  build-pyinstaller:
+    name: Build with PyInstaller (${{ matrix.os }}-${{ matrix.arch }})
+    needs: meta
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        arch: [x64, arm64]
+        exclude:
+          # Windows 不支持 arm64 架构的 runner
+          - os: windows-latest
+            arch: arm64
+    steps:
+      # 检查代码库
+      - name: Check-out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 确保能获取所有标签
+
+      # 检查当前 Python 版本
+      - name: Check Python
+        id: check_python
+        shell: bash
+        run: |
+          # 检查 Python 版本
+          PYTHON_VERSION=$(python --version 2>&1 || python3 --version 2>&1)
+          echo "Detected Python version: $PYTHON_VERSION"
+          
+          if echo "$PYTHON_VERSION" | grep -i "python 3\.12"; then
+            echo "python_version=3.12" >> $GITHUB_OUTPUT
+            echo "skip_setup=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip_setup=false" >> $GITHUB_OUTPUT
+          fi
+
+      # 设置 Python 环境（仅当当前版本不是 3.12 时）
+      - name: Setup Python
+        if: steps.check_python.outputs.skip_setup != 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: ${{ matrix.arch }}
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
+
+      # 缓存依赖
+      - name: Cache dependencies
+        uses: actions/cache@v5
+        with:
+          path: ${{ runner.os == 'Windows' && '~\AppData\Local\pip\Cache' || '~/.cache/pip' }}
+          key: ${{ runner.os }}-${{ matrix.arch }}-pip-pyinstaller-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.arch }}-pip-pyinstaller-
+
+      # 安装依赖
+      - name: Install Dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -r requirements.txt
+
+      # 安装 PyInstaller 依赖（Linux）
+      - name: Install PyInstaller dependencies (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      # 打包可执行文件（PyInstaller）
+      - name: Build with PyInstaller
+        shell: bash
+        run: |
+          # 创建 PyInstaller 规范文件
+          cat > web-scrcpy.spec << 'EOF'
+          # -*- mode: python ; coding: utf-8 -*-
+
+          block_cipher = None
+
+          a = Analysis(['app.py'],
+                       pathex=['.'],
+                       binaries=[],
+                       datas=[('templates', 'templates')],
+                       hiddenimports=['flask', 'flask_socketio', 'scrcpy', 'adb_manager'],
+                       hookspath=[],
+                       hooksconfig={},
+                       runtime_hooks=[],
+                       excludes=[],
+                       win_no_prefer_redirects=False,
+                       win_private_assemblies=False,
+                       cipher=block_cipher,
+                       noarchive=False)
+          pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+          exe = EXE(pyz,
+                    a.scripts,
+                    a.binaries,
+                    a.zipfiles,
+                    a.datas,
+                    [],
+                    name='Web-Scrcpy',
+                    debug=False,
+                    bootloader_ignore_signals=False,
+                    strip=False,
+                    upx=True,
+                    upx_exclude=[],
+                    runtime_tmpdir=None,
+                    console=True,
+                    disable_windowed_traceback=False,
+                    argv_emulation=False,
+                    target_arch=None,
+                    codesign_identity=None,
+                    entitlements_file=None)
+          EOF
+          
+          # 运行 PyInstaller
+          pyinstaller web-scrcpy.spec --noconfirm
+
+      # 上传 PyInstaller 打包的可执行文件作为 artifact
+      - name: Upload PyInstaller artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Web-Scrcpy-PyInstaller-${{ needs.meta.outputs.tag }}-${{ runner.os }}-${{ matrix.arch }}
+          path: ${{ runner.os == 'Windows' && 'dist/Web-Scrcpy.exe' || 'dist/Web-Scrcpyt' }}
+          retention-days: 7
+
+  # 发布步骤
+  release:
+    name: Publish Release
+    needs: [meta, build-nuitka, build-pyinstaller]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    steps:
+      # 下载所有构建产物
+      - name: Download artifacts from GitHub
+        uses: actions/download-artifact@v4
+        with:
+          path: assets
+
+      # 整理和清理文件
+      - name: Clean up files
+        run: |
+          # 检查并创建必要的目录
+          mkdir -p release
+          
+          # 移动和重命名 Nuitka 构建产物
+          for artifact in assets/Web-Scrcpy-Nuitka-${{ needs.meta.outputs.tag }}-*; do
+            if [ -d "$artifact" ]; then
+              # 提取操作系统和架构信息
+              os_arch=$(basename "$artifact" | sed "s/Web-Scrcpy-Nuitka-${{ needs.meta.outputs.tag }}-//")
+              # 检查文件是否存在并复制
+              if [ -f "$artifact/app.exe" ]; then
+                cp -f "$artifact/app.exe" "release/Web-Scrcpy-Nuitka-${{ needs.meta.outputs.tag }}-$os_arch.exe"
+              elif [ -f "$artifact/app" ]; then
+                cp -f "$artifact/app" "release/Web-Scrcpy-Nuitka-${{ needs.meta.outputs.tag }}-$os_arch"
+                # 添加执行权限
+                chmod +x "release/Web-Scrcpy-Nuitka-${{ needs.meta.outputs.tag }}-$os_arch"
+              fi
+            fi
+          done
+          
+          # 移动和重命名 PyInstaller 构建产物
+          for artifact in assets/Web-Scrcpy-PyInstaller-${{ needs.meta.outputs.tag }}-*; do
+            if [ -d "$artifact" ]; then
+              # 提取操作系统和架构信息
+              os_arch=$(basename "$artifact" | sed "s/Web-Scrcpy-PyInstaller-${{ needs.meta.outputs.tag }}-//")
+              # 检查文件是否存在并复制
+              if [ -f "$artifact/Web-Scrcpy.exe" ]; then
+                cp -f "$artifact/Web-Scrcpy.exe" "release/Web-Scrcpy-PyInstaller-${{ needs.meta.outputs.tag }}-$os_arch.exe"
+              elif [ -f "$artifact/Web-Scrcpy" ]; then
+                cp -f "$artifact/Web-Scrcpy" "release/Web-Scrcpy-PyInstaller-${{ needs.meta.outputs.tag }}-$os_arch"
+                # 添加执行权限
+                chmod +x "release/Web-Scrcpy-PyInstaller-${{ needs.meta.outputs.tag }}-$os_arch"
+              fi
+            fi
+          done
+          
+          # 复制变更日志
+          if [ -f "CHANGELOG.md" ]; then
+            cp -f "CHANGELOG.md" "release/CHANGELOG.md"
+          fi
+          
+          # 清理临时目录
+          rm -rf assets
+        shell: bash
+
+      # 发布 Release
+      - name: Publish release to GitHub
+        uses: softprops/action-gh-release@v2.5.0
+        with:
+          tag_name: ${{ needs.meta.outputs.tag }}
+          name: ${{ needs.meta.outputs.tag }}
+          body_path: release/CHANGELOG.md
+          files: |
+            release/Web-Scrcpy-Nuitka-${{ needs.meta.outputs.tag }}-*
+            release/Web-Scrcpy-PyInstaller-${{ needs.meta.outputs.tag }}-*
+            release/CHANGELOG.md
+          prerelease: ${{ needs.meta.outputs.prerelease != 'false' }}
+          # 为非预发布版本添加 latest 标签
+          tag_names: ${{ needs.meta.outputs.prerelease == 'false' && 'latest' || '' }}
+
+      # 失败时创建 issue
+      - name: Create issue on failure
+        if: failure()
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: "create-issue"
+          title: "Errors occurred during release ${{ needs.meta.outputs.tag }}"
+          body: |
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
