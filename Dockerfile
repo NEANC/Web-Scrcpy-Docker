@@ -1,10 +1,10 @@
-# 使用 Alpine 作为基础镜像
-FROM alpine:latest
+# 第一阶段：构建阶段
+FROM alpine:latest AS builder
 
 # 设置工作目录
 WORKDIR /app
 
-# 安装系统依赖（增加了 Pillow 和 numpy 需要的依赖）
+# 安装构建依赖
 RUN apk add --no-cache \
     python3 \
     py3-pip \
@@ -16,15 +16,12 @@ RUN apk add --no-cache \
     libffi-dev \
     openssl-dev \
     make \
-    git \
     jpeg-dev \
     zlib-dev \
     freetype-dev \
     lcms2-dev \
     openjpeg-dev \
     tiff-dev \
-    tk-dev \
-    tcl-dev \
     libwebp-dev \
     gfortran \
     libstdc++ \
@@ -34,11 +31,49 @@ RUN apk add --no-cache \
 # 复制项目文件
 COPY . /app
 
-# 创建并激活虚拟环境，安装 Python 依赖
+# 创建虚拟环境并安装 Python 依赖
 RUN python3 -m venv /app/venv && \
     . /app/venv/bin/activate && \
     pip3 install --no-cache-dir --upgrade pip && \
-    pip3 install --no-cache-dir --verbose -r requirements.txt
+    pip3 install --no-cache-dir -r requirements.txt
+
+# 第二阶段：运行阶段
+FROM alpine:latest
+
+# 设置工作目录
+WORKDIR /app
+
+# 安装运行时依赖
+RUN apk add --no-cache \
+    python3 \
+    libffi \
+    openssl \
+    libstdc++ \
+    jpeg \
+    zlib \
+    freetype \
+    lcms2 \
+    openjpeg \
+    tiff \
+    libwebp \
+    libusb \
+    busybox-extras \
+    libc6-compat \
+    musl \
+    libgcc
+
+# 从构建阶段复制必要的文件
+COPY --from=builder /app/venv /app/venv
+COPY --from=builder /app/app.py /app/app.py
+COPY --from=builder /app/scrcpy.py /app/scrcpy.py
+COPY --from=builder /app/adb_manager.py /app/adb_manager.py
+COPY --from=builder /app/scrcpy-server /app/scrcpy-server
+COPY --from=builder /app/templates /app/templates
+COPY --from=builder /app/static /app/static
+COPY --from=builder /app/adb /app/adb
+
+# 设置adb可执行文件的执行权限
+RUN chmod +x /app/adb/linux/adb
 
 # 暴露端口
 EXPOSE 5000
@@ -47,5 +82,5 @@ EXPOSE 5000
 ENV FLASK_APP=app.py
 ENV FLASK_ENV=production
 
-# 启动应用（使用虚拟环境中的 Python）
+# 启动应用
 CMD ["sh", "-c", ". /app/venv/bin/activate && python3 app.py --port 5000"]
