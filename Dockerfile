@@ -35,7 +35,13 @@ COPY . /app
 RUN python3 -m venv /app/venv && \
     . /app/venv/bin/activate && \
     pip3 install --no-cache-dir --upgrade pip && \
-    pip3 install --no-cache-dir -r requirements.txt
+    pip3 install --no-cache-dir -r requirements.txt && \
+    # 清理虚拟环境中的不必要文件
+    find /app/venv -name "__pycache__" -type d -exec rm -rf {} \; 2>/dev/null || true && \
+    find /app/venv -name "*.pyc" -type f -exec rm -f {} \; 2>/dev/null || true && \
+    find /app/venv -name "*.pyo" -type f -exec rm -f {} \; 2>/dev/null || true && \
+    find /app/venv -name "*.egg-info" -type d -exec rm -rf {} \; 2>/dev/null || true && \
+    find /app/venv -name "*.dist-info" -type d -exec rm -rf {} \; 2>/dev/null || true
 
 # 第二阶段：运行阶段
 FROM alpine:latest
@@ -65,7 +71,9 @@ COPY --from=builder /app/adb_manager.py /app/adb_manager.py
 COPY --from=builder /app/scrcpy-server /app/scrcpy-server
 COPY --from=builder /app/templates /app/templates
 COPY --from=builder /app/static /app/static
-COPY --from=builder /app/adb /app/adb
+# 只复制 linux 平台的 ADB 工具，保持目录结构一致
+RUN mkdir -p /app/adb/linux
+COPY --from=builder /app/adb/linux /app/adb/linux
 
 # 暴露端口
 EXPOSE 5000
