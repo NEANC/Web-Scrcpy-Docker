@@ -1,4 +1,4 @@
-name: 自动构建 Docker 镜像
+name: 构建 Docker 镜像并发布
 
 on:
   push:
