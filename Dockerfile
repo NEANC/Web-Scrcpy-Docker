@@ -49,7 +49,7 @@ RUN python3 -m venv /app/venv && \
     rm -rf /app/venv/bin/*.py 2>/dev/null || true
 
 # 第二阶段：运行阶段
-FROM alpine:3.19
+FROM alpine:latest
 
 # 设置工作目录
 WORKDIR /app
