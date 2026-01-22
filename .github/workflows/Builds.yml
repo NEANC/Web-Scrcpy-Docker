@@ -107,8 +107,8 @@ jobs:
           # 设置镜像标签
           docker tag web-scrcpy:latest ghcr.io/${{ env.REPO_OWNER_LOWER }}/${{ env.IMAGE_NAME }}:${{ env.FINAL_TAG }}
           
-          # 非PR事件推送latest标签
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
+          # 仅版本标签（v*）推送latest标签
+          if [ "${{ github.event_name }}" != "pull_request" ] && [ "${{ github.ref_type }}" == "tag" ] && [[ "${{ github.ref_name }}" == v* ]]; then
             docker tag web-scrcpy:latest ghcr.io/${{ env.REPO_OWNER_LOWER }}/${{ env.IMAGE_NAME }}:latest
           fi
           
@@ -120,8 +120,8 @@ jobs:
           # 推送镜像
           docker push ghcr.io/${{ env.REPO_OWNER_LOWER }}/${{ env.IMAGE_NAME }}:${{ env.FINAL_TAG }}
           
-          # 非PR事件推送latest标签
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
+          # 仅版本标签（v*）推送latest标签
+          if [ "${{ github.event_name }}" != "pull_request" ] && [ "${{ github.ref_type }}" == "tag" ] && [[ "${{ github.ref_name }}" == v* ]]; then
             docker push ghcr.io/${{ env.REPO_OWNER_LOWER }}/${{ env.IMAGE_NAME }}:latest
           fi
 
@@ -154,7 +154,7 @@ jobs:
           echo "- **仓库**: ghcr.io" >> $GITHUB_STEP_SUMMARY
           echo "- **镜像名称**: ${{ env.REPO_OWNER_LOWER }}/${{ env.IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
           echo "- **标签**: ${{ env.FINAL_TAG }}" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
+          if [ "${{ github.event_name }}" != "pull_request" ] && [ "${{ github.ref_type }}" == "tag" ] && [[ "${{ github.ref_name }}" == v* ]]; then
             echo "- **最新标签**: latest" >> $GITHUB_STEP_SUMMARY
           fi
           echo "- **完整镜像路径**: ghcr.io/${{ env.REPO_OWNER_LOWER }}/${{ env.IMAGE_NAME }}:${{ env.FINAL_TAG }}" >> $GITHUB_STEP_SUMMARY
@@ -166,7 +166,7 @@ jobs:
           if [ "${{ job.status }}" = "success" ] && [ "${{ env.IMAGE_EXISTS }}" != "true" ]; then
             echo "✅ 镜像已成功推送到GHCR" >> $GITHUB_STEP_SUMMARY
             echo "- 版本标签: ghcr.io/${{ env.REPO_OWNER_LOWER }}/${{ env.IMAGE_NAME }}:${{ env.FINAL_TAG }}" >> $GITHUB_STEP_SUMMARY
-            if [ "${{ github.event_name }}" != "pull_request" ]; then
+            if [ "${{ github.event_name }}" != "pull_request" ] && [ "${{ github.ref_type }}" == "tag" ] && [[ "${{ github.ref_name }}" == v* ]]; then
               echo "- 最新标签: ghcr.io/${{ env.REPO_OWNER_LOWER }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
             fi
           else
