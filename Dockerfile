@@ -31,8 +31,10 @@ RUN apk add --no-cache \
 # 复制项目文件
 COPY . /app
 
-# 安装 Python 依赖（直接安装到系统 Python，不使用虚拟环境）
-RUN pip3 install --no-cache-dir --upgrade pip && \
+# 创建虚拟环境并安装 Python 依赖
+RUN python3 -m venv /app/venv && \
+    . /app/venv/bin/activate && \
+    pip3 install --no-cache-dir --upgrade pip && \
     pip3 install --no-cache-dir -r requirements.txt
 
 # 第二阶段：运行阶段
@@ -44,7 +46,6 @@ WORKDIR /app
 # 安装运行时依赖
 RUN apk add --no-cache \
     python3 \
-    py3-pip \
     libffi \
     openssl \
     libstdc++ \
@@ -57,7 +58,7 @@ RUN apk add --no-cache \
     libwebp
 
 # 从构建阶段复制必要的文件
-COPY --from=builder /usr/lib/python3.*/site-packages /usr/lib/python3.*/site-packages
+COPY --from=builder /app/venv /app/venv
 COPY --from=builder /app/app.py /app/app.py
 COPY --from=builder /app/scrcpy.py /app/scrcpy.py
 COPY --from=builder /app/adb_manager.py /app/adb_manager.py
@@ -74,4 +75,4 @@ ENV FLASK_APP=app.py
 ENV FLASK_ENV=production
 
 # 启动应用
-CMD ["python3", "app.py", "--port", "5000"]
+CMD ["sh", "-c", ". /app/venv/bin/activate && python3 app.py --port 5000"]
