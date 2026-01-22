@@ -38,7 +38,7 @@ jobs:
             tag="${{ github.ref_name }}"
           else
             # For PRs and branch pushes, use git describe or fallback
-            tag=$(git describe --tags --match "v*" HEAD 2>/dev/null || echo "v0.0.1-$(git rev-parse --short HEAD)")
+            tag=$(git describe --tags --match "v*" HEAD 2>/dev/null || echo "${{ github.ref_name }}-$(git rev-parse --short HEAD)")
           fi
           echo "tag=${tag}" | tee -a $GITHUB_OUTPUT
 
@@ -175,8 +175,9 @@ jobs:
           windows-console-mode: ${{ runner.os == 'Windows' && 'force' || 'disable' }}
           assume-yes-for-downloads: true
           follow-imports: true
-          include-plugin-directory: modules
+          include-plugin-directory: mobile_v3
           output-dir: build
+          output-filename: app
           include-package: flask,flask_socketio,scrcpy,adb_manager
           no-deployment-flag: self-execution
           nofollow-import-to: '*.tests'
@@ -314,7 +315,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Web-Scrcpy-PyInstaller-${{ needs.meta.outputs.tag }}-${{ runner.os }}-${{ matrix.arch }}
-          path: ${{ runner.os == 'Windows' && 'dist/Web-Scrcpy.exe' || 'dist/Web-Scrcpyt' }}
+          path: ${{ runner.os == 'Windows' && 'dist/Web-Scrcpy.exe' || 'dist/Web-Scrcpy' }}
           retention-days: 7
 
   # 发布步骤
@@ -369,8 +370,8 @@ jobs:
           done
           
           # 复制变更日志
-          if [ -f "CHANGELOG.md" ]; then
-            cp -f "CHANGELOG.md" "release/CHANGELOG.md"
+          if [ -f "assets/updated-code/CHANGELOG.md" ]; then
+            cp -f "assets/updated-code/CHANGELOG.md" "release/CHANGELOG.md"
           fi
           
           # 清理临时目录
