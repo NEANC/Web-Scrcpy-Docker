@@ -208,6 +208,38 @@ jobs:
           
           echo "" >> $GITHUB_STEP_SUMMARY
           
+          # 获取镜像大小
+          echo "### 📊 镜像大小" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" = "success" ]; then
+            # 尝试拉取镜像并获取大小
+            if docker pull ghcr.io/${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy:${{ needs.meta.outputs.final_tag }}-amd64; then
+              AMD64_SIZE=$(docker inspect --format='{{.Size}}' ghcr.io/${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy:${{ needs.meta.outputs.final_tag }}-amd64 2>/dev/null || echo "未知")
+              if [ "$AMD64_SIZE" != "未知" ]; then
+                AMD64_SIZE_HUMAN=$(echo "scale=2; $AMD64_SIZE / 1024 / 1024" | bc)MB
+              else
+                AMD64_SIZE_HUMAN="未知"
+              fi
+            else
+              AMD64_SIZE_HUMAN="未知"
+            fi
+            
+            if docker pull ghcr.io/${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy:${{ needs.meta.outputs.final_tag }}-arm64; then
+              ARM64_SIZE=$(docker inspect --format='{{.Size}}' ghcr.io/${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy:${{ needs.meta.outputs.final_tag }}-arm64 2>/dev/null || echo "未知")
+              if [ "$ARM64_SIZE" != "未知" ]; then
+                ARM64_SIZE_HUMAN=$(echo "scale=2; $ARM64_SIZE / 1024 / 1024" | bc)MB
+              else
+                ARM64_SIZE_HUMAN="未知"
+              fi
+            else
+              ARM64_SIZE_HUMAN="未知"
+            fi
+            
+            echo "- **amd64 架构**: $AMD64_SIZE_HUMAN" >> $GITHUB_STEP_SUMMARY
+            echo "- **arm64 架构**: $ARM64_SIZE_HUMAN" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **镜像大小**: 构建失败，无法获取" >> $GITHUB_STEP_SUMMARY
+          fi
+
           # 构建详情
           echo "### 🔧 构建详情" >> $GITHUB_STEP_SUMMARY
           echo "- **构建ID**: ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
