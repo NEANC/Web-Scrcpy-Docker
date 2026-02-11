@@ -77,6 +77,12 @@ docker-compose up -d
 3. 访问 Web 界面
    - 打开浏览器访问 `http://localhost:5000/`。
 
+### 配置文件
+
+- `data/.env`：环境变量配置文件。
+  - `ADB_DEVICES`：adb 设备列表，格式为 `{"设备名称": "IP:PORT"}`。
+  - `AUTO_STOP_TIME`：自动停止镜像时间，单位为分钟。默认值为 15 分钟。
+
 ## 许可证
 
 Apache License 2.0
