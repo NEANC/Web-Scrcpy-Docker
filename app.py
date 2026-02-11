@@ -45,6 +45,18 @@ def get_saved_devices():
         # 转换为新的列表格式，设备名称默认为地址
         return [{'name': device, 'address': device} for device in devices]
 
+def get_auto_stop_time():
+    """
+    从 data/.env 文件中读取自动停止时间（分钟）
+    如果未设置，返回默认值15分钟
+    """
+    config = dotenv_values(ENV_FILE_PATH)
+    auto_stop_time = config.get('AUTO_STOP_TIME', '15')
+    try:
+        return int(auto_stop_time)
+    except (ValueError, TypeError):
+        return 15
+
 def save_devices(devices):
     """
     将所有已连接的设备 ADB 地址保存到 data/.env 文件中
@@ -183,6 +195,9 @@ def handle_connect():
     # 发送保存的设备列表
     saved_devices = get_saved_devices()
     emit('saved_devices', saved_devices)
+    # 发送自动停止时间
+    auto_stop_time = get_auto_stop_time()
+    emit('auto_stop_time', {'minutes': auto_stop_time})
     return True
 
 def get_current_mirroring_device_id():
