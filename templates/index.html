@@ -586,6 +586,9 @@
 
             function initInput(width, height) {
                 function input_data_cb(data) {
+                    // 重置自动停止定时器
+                    resetAutoStopTimer();
+                    
                     if (currentMirroringDevice) {
                         socket.emit('control_data', {
                             device_id: currentMirroringDevice,
@@ -607,25 +610,62 @@
                     const menuBtn = document.getElementById('menu-btn');
 
                     backBtn.addEventListener('mousedown', (event) => {
+                        resetAutoStopTimer();
                         input.snedKeyCode(event, 0, 4);
                     });
                     backBtn.addEventListener('mouseup', (event) => {
+                        resetAutoStopTimer();
                         input.snedKeyCode(event, 1, 4);
                     });
                     homeBtn.addEventListener('mousedown', (event) => {
+                        resetAutoStopTimer();
                         input.snedKeyCode(event, 0, 3);
                     });
                     homeBtn.addEventListener('mouseup', (event) => {
+                        resetAutoStopTimer();
                         input.snedKeyCode(event, 1, 3);
                     });
                     menuBtn.addEventListener('mousedown', (event) => {
+                        resetAutoStopTimer();
                         input.snedKeyCode(event, 0, 187);
                     });
                     menuBtn.addEventListener('mouseup', (event) => {
+                        resetAutoStopTimer();
                         input.snedKeyCode(event, 1, 187);
                     });
 
                     controlsBound = true;
+                }
+            }
+
+            let autoStopTimer = null;
+            let autoStopMinutes = 15; // 默认15分钟
+            let AUTO_STOP_TIME = 15 * 60 * 1000; // 默认15分钟（毫秒）
+
+            function updateAutoStopTime(minutes) {
+                autoStopMinutes = minutes;
+                AUTO_STOP_TIME = minutes * 60 * 1000;
+                console.log(`自动停止时间已更新为 ${minutes} 分钟`);
+            }
+
+            function resetAutoStopTimer() {
+                if (autoStopTimer) {
+                    clearTimeout(autoStopTimer);
+                }
+                if (currentMirroringDevice) {
+                    autoStopTimer = setTimeout(() => {
+                        if (currentMirroringDevice) {
+                            showToast(`${autoStopMinutes}分钟无操作，自动停止镜像`, 'info');
+                            socket.emit('stop_mirror', { device_id: currentMirroringDevice });
+                        }
+                    }, AUTO_STOP_TIME);
+                }
+            }
+
+            function clearAutoStopTimer() {
+                if (autoStopTimer) {
+                    clearTimeout(autoStopTimer);
+                    autoStopTimer = null;
                 }
             }
 
@@ -694,6 +734,13 @@
 
             socket.on('connect', () => {
                 showToast('已连接到服务器', 'success');
+            });
+
+            // 接收自动停止时间
+            socket.on('auto_stop_time', (data) => {
+                if (data && data.minutes) {
+                    updateAutoStopTime(data.minutes);
+                }
             });
 
             // 接收保存的 ADB 地址
@@ -966,12 +1013,16 @@
                 if (!jmuxer) {
                     jmuxer = createJMuxer();
                 }
+                // 启动自动停止定时器
+                resetAutoStopTimer();
             });
 
             socket.on('mirror_stopped', (data) => {
                 showToast(`设备 ${data.device_id} 镜像已停止`, 'warning');
                 currentMirroringDevice = null;  // 清除当前镜像设备
                 hideControlPanel();
+                // 清除自动停止定时器
+                clearAutoStopTimer();
                 // 重置播放器和解析器，避免残留状态影响再次启动
                 resetPlayer();
                 if (input && typeof input.destroy === 'function') {
