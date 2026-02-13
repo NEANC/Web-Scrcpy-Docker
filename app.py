@@ -57,6 +57,15 @@ def get_auto_stop_time():
     except (ValueError, TypeError):
         return 15
 
+def get_demo_mode():
+    """
+    从 data/.env 文件中读取演示模式配置
+    如果未设置，返回默认值False
+    """
+    config = dotenv_values(ENV_FILE_PATH)
+    demo_mode = config.get('DEMO_MODE', 'False')
+    return demo_mode.lower() in ('true')
+
 def save_devices(devices):
     """
     将所有已连接的设备 ADB 地址保存到 data/.env 文件中
@@ -198,6 +207,9 @@ def handle_connect():
     # 发送自动停止时间
     auto_stop_time = get_auto_stop_time()
     emit('auto_stop_time', {'minutes': auto_stop_time})
+    # 发送演示模式状态
+    demo_mode = get_demo_mode()
+    emit('demo_mode', {'enabled': demo_mode})
     return True
 
 def get_current_mirroring_device_id():
@@ -219,6 +231,15 @@ def handle_device_connect(data):
         if device_id in device_manager.devices:
             emit('connection_error', f'设备 {device_id} 已连接')
             return
+        
+        # 演示模式验证
+        if get_demo_mode():
+            # 获取保存的设备列表（包含预设IP）
+            saved_devices = get_saved_devices()
+            # 检查设备ID是否在预设列表中
+            if not any(device['address'] == device_id for device in saved_devices):
+                emit('connection_error', '演示模式下只允许连接预设的设备')
+                return
         
         # 尝试连接设备
         print(f'Trying to connect to device: {device_id}')
@@ -287,6 +308,11 @@ def handle_delete_saved_device(data):
     """
     处理删除保存设备的请求
     """
+    # 演示模式验证
+    if get_demo_mode():
+        emit('error', {'message': '演示模式下不允许删除设备'})
+        return
+    
     device_address = data.get('device_id')
     try:
         # 从保存的设备列表中移除该设备（通过address字段）
