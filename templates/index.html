@@ -816,6 +816,45 @@
             }
 
             let currentDeviceId = null;
+            let demoMode = false; // 演示模式状态
+
+            // 接收演示模式状态
+            socket.on('demo_mode', (data) => {
+                demoMode = data.enabled;
+                updateUIForDemoMode();
+            });
+
+            function updateUIForDemoMode() {
+                const deviceIpInput = document.getElementById('device-ip');
+                const devicePortInput = document.getElementById('device-port');
+                const connectBtn = document.getElementById('connect-btn');
+                
+                if (demoMode) {
+                    // 禁止"链接新设备"框的输入
+                    deviceIpInput.disabled = true;
+                    devicePortInput.disabled = true;
+                    // 连接按钮在演示模式下也保持启用，以便通过已保存的设备进行链接
+                    connectBtn.disabled = false;
+                } else {
+                    // 启用"链接新设备"框的输入
+                    deviceIpInput.disabled = false;
+                    devicePortInput.disabled = false;
+                    connectBtn.disabled = false;
+                }
+                
+                // 更新设备列表，隐藏或显示相关按钮
+                const savedDevices = document.querySelectorAll('#saved-devices-container .list-group-item');
+                savedDevices.forEach(item => {
+                    const deleteBtn = item.querySelector('.delete-saved-device-btn');
+                    if (demoMode) {
+                        // 前端不显示"已保存的设备"的"删除选项"
+                        if (deleteBtn) deleteBtn.style.display = 'none';
+                    } else {
+                        // 显示"已保存的设备"的"删除选项"
+                        if (deleteBtn) deleteBtn.style.display = 'inline-block';
+                    }
+                });
+            }
 
             function updateDeviceList(devices) {
                 if (!devices || devices.length === 0) {
@@ -832,6 +871,9 @@
                         ? `<button class="stop-mirror-btn btn btn-danger btn-sm" data-device="${device.id}">停止镜像</button>`
                         : `<button class="start-mirror-btn btn btn-success btn-sm" data-device="${device.id}">开始镜像</button>`;
 
+                    // 始终显示重命名选项
+                    const renameButton = `<button class="rename-device-btn btn btn-info btn-sm" data-device="${device.id}" data-name="${deviceName}">重命名</button>`;
+
                     return `
                     <div class="list-group-item">
                         <div class="d-flex w-100 justify-content-between align-items-center">
@@ -842,7 +884,7 @@
                         <div class="mt-2 d-flex gap-2">
                             ${actionButtons}
                             <button class="disconnect-btn btn btn-secondary btn-sm" data-device="${device.id}">断开连接</button>
-                            <button class="rename-device-btn btn btn-info btn-sm" data-device="${device.id}" data-name="${deviceName}">重命名</button>
+                            ${renameButton}
                         </div>
                     </div>
                 `;
@@ -913,6 +955,14 @@
 
                 savedDevicesContainer.innerHTML = devices.map(device => {
                     const [ip, port] = device.address.split(':');
+                    
+                    // 始终显示重命名选项，演示模式下不显示删除选项
+                    const renameButton = `<button class="rename-saved-device-btn btn btn-secondary btn-sm" data-address="${device.address}" data-name="${device.name}">重命名</button>`;
+                    
+                    const deleteButton = demoMode 
+                        ? '' 
+                        : `<button class="delete-saved-device-btn btn btn-danger btn-sm" data-device="${device.address}">删除</button>`;
+                    
                     return `
                     <div class="list-group-item">
                         <div class="d-flex w-100 justify-content-between align-items-center">
@@ -921,8 +971,8 @@
                         <div class="small text-muted">地址：${device.address}</div>
                         <div class="mt-2 d-flex gap-2">
                             <button class="connect-saved-device-btn btn btn-success btn-sm" data-ip="${ip}" data-port="${port}" data-address="${device.address}">连接</button>
-                            <button class="rename-saved-device-btn btn btn-secondary btn-sm" data-address="${device.address}" data-name="${device.name}">重命名</button>
-                            <button class="delete-saved-device-btn btn btn-danger btn-sm" data-device="${device.address}">删除</button>
+                            ${renameButton}
+                            ${deleteButton}
                         </div>
                     </div>
                 `;
