@@ -1,10 +1,6 @@
 # 第一阶段：构建阶段
 FROM alpine:latest AS builder
 
-# 架构参数
-ARG TARGETARCH
-ARG TARGETVARIANT
-
 # 设置工作目录
 WORKDIR /app
 
@@ -44,14 +40,10 @@ RUN python3 -m venv /app/venv && \
 # 第二阶段：运行阶段
 FROM alpine:latest
 
-# 架构参数
-ARG TARGETARCH
-ARG TARGETVARIANT
-
 # 设置工作目录
 WORKDIR /app
 
-# 安装运行时依赖
+# 安装运行时依赖（包含android-tools以提供adb，支持多架构）
 RUN apk add --no-cache \
     python3 \
     libffi \
@@ -69,6 +61,7 @@ RUN apk add --no-cache \
     libc6-compat \
     musl \
     libgcc \
+    gcompat \
     android-tools
 
 # 从构建阶段复制必要的文件
@@ -80,16 +73,9 @@ COPY --from=builder /app/scrcpy-server /app/scrcpy-server
 COPY --from=builder /app/templates /app/templates
 COPY --from=builder /app/static /app/static
 
-# 创建 adb 目录结构并链接系统 adb
-# Alpine 的 android-tools 包会根据架构自动安装对应版本
-RUN mkdir -p /app/adb/linux /app/adb/linux-arm64 /app/adb/linux-armv7 && \
-    if [ "$TARGETARCH" = "amd64" ]; then \
-        ln -s /usr/bin/adb /app/adb/linux/adb; \
-    elif [ "$TARGETARCH" = "arm64" ]; then \
-        ln -s /usr/bin/adb /app/adb/linux-arm64/adb; \
-    elif [ "$TARGETARCH" = "arm" ] && [ "$TARGETVARIANT" = "v7" ]; then \
-        ln -s /usr/bin/adb /app/adb/linux-armv7/adb; \
-    fi
+# 创建adb目录并创建符号链接到系统adb（支持多架构）
+RUN mkdir -p /app/adb/linux && \
+    ln -s /usr/bin/adb /app/adb/linux/adb
 
 # 暴露端口
 EXPOSE 5000

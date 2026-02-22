@@ -12,38 +12,18 @@ class ADBManager:
         self.is_tcp_mode = False
 
     def _get_adb_path(self) -> str:
-        """
-        获取adb路径，根据操作系统和CPU架构自动选择
-        
-        Returns:
-            str: adb可执行文件的路径
-            
-        Raises:
-            Exception: 不支持的操作系统或架构
-        """
+        """获取adb路径"""
         system = platform.system().lower()
-        machine = platform.machine().lower()
         current_dir = os.path.dirname(os.path.abspath(__file__))
         
         if system == "windows":
             adb_path = os.path.join(current_dir, "adb", "windows", "adb.exe")
         elif system == "darwin":  # macOS
-            if machine in ("arm64", "aarch64"):
-                adb_path = os.path.join(current_dir, "adb", "darwin-arm64", "adb")
-            else:
-                adb_path = os.path.join(current_dir, "adb", "darwin", "adb")
+            adb_path = os.path.join(current_dir, "adb", "darwin", "adb")
         elif system == "linux":
-            if machine in ("arm64", "aarch64"):
-                adb_path = os.path.join(current_dir, "adb", "linux-arm64", "adb")
-            elif machine in ("armv7l", "armv7", "armhf"):
-                adb_path = os.path.join(current_dir, "adb", "linux-armv7", "adb")
-            else:
-                adb_path = os.path.join(current_dir, "adb", "linux", "adb")
+            adb_path = os.path.join(current_dir, "adb", "linux", "adb")
         else:
             raise Exception(f"不支持的操作系统: {system}")
-        
-        if not os.path.exists(adb_path):
-            raise Exception(f"未找到对应架构的ADB工具: {adb_path}")
         
         return adb_path
 

@@ -7,22 +7,6 @@
 相对于上游，添加了链接时自动镜像与本地保存设备列表功能，移除了 AI 聊天与自动操作功能。  
 使用 Docker 镜像在 `x86_64` 与 `arm64` 架构的 Linux 系统上运行；或使用源码形式在 `Windows/macOS/Linux` 系统上运行。
 
-## 支持的架构
-
-程序会根据操作系统和 CPU 架构自动选择对应的 ADB 工具：
-
-| 操作系统 | CPU 架构 | ADB 目录 |
-|---------|---------|---------|
-| Windows | x86_64 | `adb/windows/` |
-| macOS | x86_64 | `adb/darwin/` |
-| macOS | ARM64 (M1/M2/M3) | `adb/darwin-arm64/` |
-| Linux | x86_64 | `adb/linux/` |
-| Linux | ARM64 | `adb/linux-arm64/` |
-| Linux | ARMv7 | `adb/linux-armv7/` |
-
-> [!NOTE]
-> ARM 架构的 ADB 工具需要自行下载并放入对应目录。可从 [Google Platform Tools](https://developer.android.com/studio/releases/platform-tools) 获取。
-
 ## 快速开始
 
 ### 使用 Docker Run 命令
