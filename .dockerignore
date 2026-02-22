@@ -13,9 +13,8 @@ LICENSE.txt
 .vscode/
 .idea/
 
-# 排除不同平台的 ADB 工具（只保留 linux 版本）
-adb/darwin/
-adb/windows/
+# 排除 ADB 工具（构建时从 Alpine 包管理器安装）
+adb/
 
 # 排除虚拟环境
 venv/
@@ -31,3 +30,4 @@ __pycache__/
 
 # 排除 .env 文件（可以在构建时通过环境变量传入）
 .env
+data/.env
