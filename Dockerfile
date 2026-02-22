@@ -26,7 +26,8 @@ RUN apk add --no-cache \
     gfortran \
     libstdc++ \
     lapack-dev \
-    blas-dev
+    blas-dev \
+    wget
 
 # 复制项目文件
 COPY . /app
@@ -36,6 +37,9 @@ RUN python3 -m venv /app/venv && \
     . /app/venv/bin/activate && \
     pip3 install --no-cache-dir --upgrade pip && \
     pip3 install --no-cache-dir -r requirements.txt
+
+# 下载最新版本的 scrcpy-server
+RUN wget -q https://github.com/Genymobile/scrcpy/releases/download/v3.3.4/scrcpy-server-v3.3.4 -O /app/scrcpy-server
 
 # 第二阶段：运行阶段
 FROM alpine:latest
