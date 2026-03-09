@@ -1,0 +1,249 @@
+name: 构建 Docker 镜像并发布
+
+on:
+  #push:
+  #  branches: [ main ]
+  #  tags:
+  #    - 'v*'  # 版本号标记
+  #pull_request:
+  #  branches: [ main ]
+  workflow_dispatch:
+
+# 权限配置：仅授予GHCR推送必需的最小权限
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # 准备步骤，用于代码检出、版本控制和版本号更新
+  meta:
+    name: Gather Meta Information
+    runs-on: ubuntu-24.04
+    outputs:
+      repo_owner_lower: ${{ steps.set_repo_owner.outputs.repo_owner_lower }}
+      version: ${{ steps.set_version.outputs.version }}
+      final_tag: ${{ steps.set_final_tag.outputs.final_tag }}
+      should_push_latest: ${{ steps.check_latest.outputs.should_push_latest }}
+    steps:
+      # 检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 定义仓库所有者名称（转为小写）
+      - name: Define Repo Owner Lower
+        id: set_repo_owner
+        run: |
+          # 初始化所有者姓名
+          # 把github.repository_owner转为纯小写，避免大写导致的镜像名称错误
+          REPO_OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "repo_owner_lower=${REPO_OWNER_LOWER}" | tee -a $GITHUB_OUTPUT
+      
+      # 生成版本号
+      - name: Generate Version
+        id: set_version
+        run: |
+          # 生成版本号
+          # 如果是标签推送，使用标签名
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION=${{ github.ref_name }}
+          # 如果是分支推送，使用分支名-短哈希
+          else
+            BRANCH=${{ github.ref_name }}
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            VERSION="${BRANCH}-${SHORT_SHA}"
+          fi
+          
+          echo "Generated version: $VERSION"
+          echo "version=$VERSION" | tee -a $GITHUB_OUTPUT
+      
+      # 生成最终标签
+      - name: Generate Final Tag
+        id: set_final_tag
+        run: |
+          # 生成标签
+          # 检查事件类型并生成相应的标签
+          if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.action }}" = "closed" ] && [ "${{ github.event.pull_request.merged }}" = "true" ]; then
+            # 对于合并的PR事件，使用版本号+PR编号
+            PR_NUMBER=${{ github.event.pull_request.number }}
+            FINAL_TAG="${{ steps.set_version.outputs.version }}-pr$PR_NUMBER"
+          else
+            # 默认情况（如手动触发、定时任务等），使用生成的版本号
+            FINAL_TAG="${{ steps.set_version.outputs.version }}"
+          fi
+          
+          echo "Generated tag: $FINAL_TAG"
+          echo "final_tag=$FINAL_TAG" | tee -a $GITHUB_OUTPUT
+      
+      # 检查是否应该推送latest标签
+      - name: Check if should push latest tag
+        id: check_latest
+        run: |
+          # 仅版本标签（v*）推送latest标签
+          if [ "${{ github.event_name }}" != "pull_request" ] && [ "${{ github.ref_type }}" == "tag" ] && [[ "${{ github.ref_name }}" == v* ]]; then
+            echo "should_push_latest=true" | tee -a $GITHUB_OUTPUT
+          else
+            echo "should_push_latest=false" | tee -a $GITHUB_OUTPUT
+          fi
+
+  # 构建镜像（多架构并行构建）
+  build:
+    name: Build Docker Image
+    needs: meta
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      # 检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 设置 Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 登录GHCR
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 构建并推送镜像（按架构）
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: linux/${{ matrix.arch }}
+          tags: ghcr.io/${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy:${{ needs.meta.outputs.final_tag }}-${{ matrix.arch }}
+          cache-from: type=local,src=/tmp/.buildx-cache-${{ matrix.arch }}
+          cache-to: type=local,dest=/tmp/.buildx-cache-${{ matrix.arch }},mode=max
+
+  # 推送镜像（合并架构并推送）
+  push:
+    name: Push Docker Image
+    needs: [meta, build]
+    runs-on: ubuntu-24.04
+    steps:
+      # 登录GHCR
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 推送镜像
+      - name: Push Docker image
+        run: |
+          # 尝试删除现有的 manifest，避免冲突
+          docker manifest rm ghcr.io/${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy:${{ needs.meta.outputs.final_tag }} 2>/dev/null || true
+          
+          # 直接使用 docker buildx imagetools create 来创建和推送多架构镜像
+          # 这个命令会自动处理单个架构镜像的引用，避免 manifest list 冲突
+          docker buildx imagetools create \
+            --tag ghcr.io/${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy:${{ needs.meta.outputs.final_tag }} \
+            ghcr.io/${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy:${{ needs.meta.outputs.final_tag }}-amd64 \
+            ghcr.io/${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy:${{ needs.meta.outputs.final_tag }}-arm64
+
+          # 只有当 should_push_latest 为 true 时，才创建并推送 latest 标签
+          if [ "${{ needs.meta.outputs.should_push_latest }}" = "true" ]; then
+            # 尝试删除现有的 latest manifest，避免冲突
+            docker manifest rm ghcr.io/${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy:latest 2>/dev/null || true
+            
+            # 使用 docker buildx imagetools create 来创建和推送 latest 标签
+            docker buildx imagetools create \
+              --tag ghcr.io/${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy:latest \
+              ghcr.io/${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy:${{ needs.meta.outputs.final_tag }}-amd64 \
+              ghcr.io/${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy:${{ needs.meta.outputs.final_tag }}-arm64
+          fi
+
+      # 登出GHCR
+      - name: Logout from GHCR
+        if: always()  # 无论前面步骤是否失败，都执行登出
+        run: docker logout ghcr.io
+
+      # 构建摘要
+      - name: Build Summary
+        if: always()  # 无论前面步骤是否失败，都输出摘要
+        run: |
+          # 添加GitHub Actions UI作业摘要
+          echo "## Docker镜像构建结果" >> $GITHUB_STEP_SUMMARY
+          
+          # 构建状态
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ **构建状态**: 成功" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **构建状态**: 失败" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # 容器信息
+          echo "### 🐳 容器信息" >> $GITHUB_STEP_SUMMARY
+          echo "- **仓库**: ghcr.io" >> $GITHUB_STEP_SUMMARY
+          echo "- **镜像名称**: ${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy" >> $GITHUB_STEP_SUMMARY
+          echo "- **标签**: ${{ needs.meta.outputs.final_tag }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.meta.outputs.should_push_latest }}" = "true" ]; then
+            echo "- **最新标签**: latest" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "- **完整镜像路径**: ghcr.io/${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy:${{ needs.meta.outputs.final_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **支持架构**: amd64, arm64" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # 推送状态
+          echo "### 📤 推送状态" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ 镜像已成功推送到GHCR" >> $GITHUB_STEP_SUMMARY
+            echo "- 版本标签: ghcr.io/${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy:${{ needs.meta.outputs.final_tag }}" >> $GITHUB_STEP_SUMMARY
+            if [ "${{ needs.meta.outputs.should_push_latest }}" = "true" ]; then
+              echo "- 最新标签: ghcr.io/${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy:latest" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "❌ 镜像推送失败或被跳过" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # 获取镜像大小
+          echo "### 📊 镜像大小" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" = "success" ]; then
+            # 尝试拉取镜像并获取大小
+            if docker pull ghcr.io/${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy:${{ needs.meta.outputs.final_tag }}-amd64; then
+              AMD64_SIZE=$(docker inspect --format='{{.Size}}' ghcr.io/${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy:${{ needs.meta.outputs.final_tag }}-amd64 2>/dev/null || echo "未知")
+              if [ "$AMD64_SIZE" != "未知" ]; then
+                AMD64_SIZE_HUMAN=$(echo "scale=2; $AMD64_SIZE / 1024 / 1024" | bc)MB
+              else
+                AMD64_SIZE_HUMAN="未知"
+              fi
+            else
+              AMD64_SIZE_HUMAN="未知"
+            fi
+            
+            if docker pull ghcr.io/${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy:${{ needs.meta.outputs.final_tag }}-arm64; then
+              ARM64_SIZE=$(docker inspect --format='{{.Size}}' ghcr.io/${{ needs.meta.outputs.repo_owner_lower }}/web-scrcpy:${{ needs.meta.outputs.final_tag }}-arm64 2>/dev/null || echo "未知")
+              if [ "$ARM64_SIZE" != "未知" ]; then
+                ARM64_SIZE_HUMAN=$(echo "scale=2; $ARM64_SIZE / 1024 / 1024" | bc)MB
+              else
+                ARM64_SIZE_HUMAN="未知"
+              fi
+            else
+              ARM64_SIZE_HUMAN="未知"
+            fi
+            
+            echo "- **amd64 架构**: $AMD64_SIZE_HUMAN" >> $GITHUB_STEP_SUMMARY
+            echo "- **arm64 架构**: $ARM64_SIZE_HUMAN" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **镜像大小**: 构建失败，无法获取" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # 构建详情
+          echo "### 🔧 构建详情" >> $GITHUB_STEP_SUMMARY
+          echo "- **构建ID**: ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **触发方式**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **分支**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **构建时间**: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "- **工作流运行**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
